@@ -26,7 +26,7 @@ verificación integrada al cierre.
     params → `unexpected keyword argument 'cwd'`.
   - Sin idempotencia, un doble clic re-ejecutaba la acción.
 - **Prompt injection de prueba versionado.** `workspace/uploads/default/notas_proyecto.txt`
-  contenía instrucciones para sobrescribir `gate_rules.yaml`. NISABA usa
+  contenía instrucciones para sobrescribir `gate_rules.yaml`. Retriever usa
   `workspace/` como raíz por defecto para indexar y buscar, así que era un
   vector de inyección dentro del repositorio. Removido del índice.
 
@@ -40,7 +40,7 @@ verificación integrada al cierre.
 - **Puerto partido (8000 vs 8001).** Cuatro fuentes decían 8000 y dos 8001; el
   CLI fallaba con `WinError 10061` y los MCP servers apuntaban a un puerto
   muerto. Nuevo `api/ports.py` como fuente única (`VCORE_PORT` para override),
-  migrados CLI, MCP servers, ENLIL, `visual_auditor`, `watchdog` y scripts de
+  migrados CLI, MCP servers, Orchestrator, `visual_auditor`, `watchdog` y scripts de
   arranque.
 - **`/system/health` se auto-bloqueaba.** 13.0s constante y reportaba
   `api.ok=false` con el backend sano, generando una alerta crítica falsa: el
@@ -119,10 +119,10 @@ verificación integrada al cierre.
 - **SI-2**: `asyncio.Lock` → `threading.Lock` en `main.py`. Sin I/O bloqueante en el event loop.
 - **SI-3**: `_ensure_default_session()` ahora resincroniza desde default si el lead model difiere del global.
 
-### Added — Motor de memoria SHAMASH
-- `agents/SHAMASH/memory.py`: motor con deduplicación (SHA-256), historial SQLite, API limpia.
+### Added — Motor de memoria Curator
+- `agents/Curator/memory.py`: motor con deduplicación (SHA-256), historial SQLite, API limpia.
 - Tabla `nem0_memory` reemplaza `agent_memory` (0 rows → funcional).
-- SHAMASH `shamash.py`: 511→308 líneas. Solo contexto del proyecto.
+- Curator `curator.py`: 511→308 líneas. Solo contexto del proyecto.
 
 ### Added — Tool parsing v2
 - Bare parser: detecta `read_file path` sin prefijo `TOOL:`.
@@ -150,7 +150,7 @@ verificación integrada al cierre.
 - 25 referencias a modelos muertos (gemini, qwen, llava) corregidas.
 - `list_models.py`, `import.py`, `FILE_MANIFEST.txt`, `.continue/` eliminados.
 - 8 sesiones viejas (182-189) eliminadas.
-- Rol `shamash` eliminado de `model_routing.yaml` (45 referencias limpiadas).
+- Rol `curator` eliminado de `model_routing.yaml` (45 referencias limpiadas).
 
 ### Docs
 - `SESION_2026-07-08.md`: registro completo de la sesión.
@@ -164,7 +164,7 @@ verificación integrada al cierre.
 
 > No es un release — es un erratum documental de la segunda ronda de auditoría...
 
-**Documentos actualizados**: `AGENTS.md`, `VCORE_STATE.json`, `agents/ENLIL/ENLIL.md`, `agents/ENKI/ENKI.md`, `agents/NISABA/NISABA.md`, `agents/SHAMASH/SHAMASH.md`, `VCORE_ARCHITECTURE_v1_3.md`, `VCORE_ROADMAP_v1_3.md`, `docs/SESSION_ISOLATION_ARCHITECTURE.md`, `docs/DEUDA_TECNICA.md`, `docs/CHANGELOG.md` (este mismo erratum).
+**Documentos actualizados**: `AGENTS.md`, `VCORE_STATE.json`, `agents/Orchestrator/Orchestrator.md`, `agents/Planner/Planner.md`, `agents/Retriever/Retriever.md`, `agents/Curator/Curator.md`, `VCORE_ARCHITECTURE_v1_3.md`, `VCORE_ROADMAP_v1_3.md`, `docs/SESSION_ISOLATION_ARCHITECTURE.md`, `docs/DEUDA_TECNICA.md`, `docs/CHANGELOG.md` (este mismo erratum).
 
 ---
 
@@ -185,7 +185,7 @@ verificación integrada al cierre.
 - `vcore status` ✅ (versión 1.4.0 leída de VCORE_STATE.json)
 - **Bugs corregidos in-situ**: 3 hardcodeos de versión en `vcore.py` (banner v1.2.0, doctor v1.2.0, `cli_version` v1.3.0 → todos a v1.4.0)
 
-### SHAMASH — confirmado: solo SQL + ChromaDB
+### Curator — confirmado: solo SQL + ChromaDB
 - 0 imports de cliente LLM, 0 llamadas a API NIM/Ollama/DeepSeek
 - Solo `sqlite3`, `chromadb`, `api.embed` — exactamente lo que dijiste: "un script de SQL"
 - El "nim" encontrado por grep era falso positivo ("mí**nim**a")
@@ -240,13 +240,13 @@ verificación integrada al cierre.
 - `sessions/default/model_routing.yaml` sincronizado con global
 
 ### Pendiente
-- Rol `shamash` en `model_routing.yaml`: tiene comentario DT-20, el bloque con `mistralai/mistral-small-4-119b` sigue activo. No es un agente — decisión de eliminación pendiente.
+- Rol `curator` en `model_routing.yaml`: tiene comentario DT-20, el bloque con `mistralai/mistral-small-4-119b` sigue activo. No es un agente — decisión de eliminación pendiente.
 
 ---
-- **VCORE_STATE.json**: `shamash_model: "mistralai/mistral-small-4-119b-2603"` — factualmente incorrecto (DT-20). SHAMASH no consume API NIM. Corregido a `null` con nota explicativa.
-- **agentes/ENLIL.md, ENKI.md, NISABA.md, SHAMASH.md**: completamente stale desde v0.3 — mencionaban `gemini-2.5-flash`, `gemini-3.5-flash`, `qwen2.5-coder:14b`, `nomic-embed-text via Ollama` con rutas viejas (`knowledge/.chromadb/`). Actualizados a modelos NIM reales (`moonshotai/kimi-k2.6`, `deepseek-ai/deepseek-v4-flash`, `nvidia/nemotron-mini-4b-instruct`), `api/embed.py` unificado, `chroma_db/` como ruta de ChromaDB. SHAMASH reetiquetado como capa de persistencia, no agente.
-- **VCORE_ARCHITECTURE_v1_3.md**: line counts corregidos — enlil.py 2029→1905 (-124, reducción no documentada), app.js 2448→2495 (+47), style.css 645→670 (+25), index.html 270→267 (-3), model_routing.yaml 275→340 (+65), enki.py 867→868, nisaba.py 660→661. Agregado "streaming SSE" en descripción de enlil.py. Actualizado a 6 modelos disponibles. Corregida descripción de SHAMASH en diagrama de componentes (removida asignación de modelo LLM, agregada nota "no LLM").
-- **VCORE_ROADMAP_v1_3.md**: actualizada fecha a 8 Jul. Corregido el snapshot del lead model en tabla de auditoría (ahora dice `z-ai/glm-5.2`, 8 Jul). Actualizado line count de enlil.py (2029→1905). Actualizada referencia a DEUDA_TECNICA (DT-00 a DT-20, antes DT-14). Agregada nota de actualización 8 Jul.
+- **VCORE_STATE.json**: `curator_model: "mistralai/mistral-small-4-119b-2603"` — factualmente incorrecto (DT-20). Curator no consume API NIM. Corregido a `null` con nota explicativa.
+- **agentes/Orchestrator.md, Planner.md, Retriever.md, Curator.md**: completamente stale desde v0.3 — mencionaban `gemini-2.5-flash`, `gemini-3.5-flash`, `qwen2.5-coder:14b`, `nomic-embed-text via Ollama` con rutas viejas (`knowledge/.chromadb/`). Actualizados a modelos NIM reales (`moonshotai/kimi-k2.6`, `deepseek-ai/deepseek-v4-flash`, `nvidia/nemotron-mini-4b-instruct`), `api/embed.py` unificado, `chroma_db/` como ruta de ChromaDB. Curator reetiquetado como capa de persistencia, no agente.
+- **VCORE_ARCHITECTURE_v1_3.md**: line counts corregidos — orchestrator.py 2029→1905 (-124, reducción no documentada), app.js 2448→2495 (+47), style.css 645→670 (+25), index.html 270→267 (-3), model_routing.yaml 275→340 (+65), planner.py 867→868, retriever.py 660→661. Agregado "streaming SSE" en descripción de orchestrator.py. Actualizado a 6 modelos disponibles. Corregida descripción de Curator en diagrama de componentes (removida asignación de modelo LLM, agregada nota "no LLM").
+- **VCORE_ROADMAP_v1_3.md**: actualizada fecha a 8 Jul. Corregido el snapshot del lead model en tabla de auditoría (ahora dice `z-ai/glm-5.2`, 8 Jul). Actualizado line count de orchestrator.py (2029→1905). Actualizada referencia a DEUDA_TECNICA (DT-00 a DT-20, antes DT-14). Agregada nota de actualización 8 Jul.
 - **SESSION_ISOLATION_ARCHITECTURE.md**: Fase 2 marcada como ✅ COMPLETADO — `POST /sessions/<id>/model` ya está implementado (v1.4). Antes estaba marcada como pendiente.
 - **DEUDA_TECNICA.md**: DT-14 actualizado de 🟡 "Decidido, pendiente de verificación" a ✅ "Resuelto — migración implementada y verificada" (basado en la skill vcore-app-config que documenta `mcp_manager.py` reemplazando al dispatcher casero). DT-06 desbloqueado como consecuencia.
 - **RUTA-SOFTWARE-SERIO.md**: §2 triage de `mcp_config.json` decía "✅ Resuelto", pero DT-14 en DEUDA_TECNICA decía "pendiente de verificación" — contradicción resuelta: ambos ahora marcan DT-14 como ✅ resuelto.
@@ -254,19 +254,19 @@ verificación integrada al cierre.
 **Hallazgos no corregidos en esta ronda (dejan de ser contradicción, queda registrado)**:
 - **SESION_2026-07-07.md**: dice "v1.1.0" en el estado final y "ChromaDB 93 docs" — este doc es histórico de esa sesión y no se modifica por diseño (es una foto del momento, no un doc vivo). Se aclara la contradicción con VCORE_ARCHITECTURE que dice "79 docs" — ninguno confianza: falta verificación real de ChromaDB (chromadb no instalado en este venv).
 
-**Documentos actualizados**: `AGENTS.md`, `VCORE_STATE.json`, `agents/ENLIL/ENLIL.md`, `agents/ENKI/ENKI.md`, `agents/NISABA/NISABA.md`, `agents/SHAMASH/SHAMASH.md`, `VCORE_ARCHITECTURE_v1_3.md`, `VCORE_ROADMAP_v1_3.md`, `docs/SESSION_ISOLATION_ARCHITECTURE.md`, `docs/DEUDA_TECNICA.md`, `docs/CHANGELOG.md` (este mismo erratum).
+**Documentos actualizados**: `AGENTS.md`, `VCORE_STATE.json`, `agents/Orchestrator/Orchestrator.md`, `agents/Planner/Planner.md`, `agents/Retriever/Retriever.md`, `agents/Curator/Curator.md`, `VCORE_ARCHITECTURE_v1_3.md`, `VCORE_ROADMAP_v1_3.md`, `docs/SESSION_ISOLATION_ARCHITECTURE.md`, `docs/DEUDA_TECNICA.md`, `docs/CHANGELOG.md` (este mismo erratum).
 
 ---
 
 ## Auditoría cruzada docs↔código (2026-07-07, post v1.4.0)
 
-> No es un release — es un erratum documental. Se cruzaron `VCORE_ARCHITECTURE_v1_3.md`, `VCORE_ROADMAP_v1_3.md`, `DEUDA_TECNICA.md`, `LOGFIX.md` y `VCORE_STATE.json` contra el código real (`main.py`, `llm_client.py`, `enlil.py`, `shamash.py`, `nisaba.py`, `gate.py`, `mcp_client.py`, `gate_rules.yaml`, `model_routing.yaml`). Las entradas históricas de este changelog no se modificaron — quedan como registro de lo que se declaró en su momento. Estos son los errores encontrados y lo que se corrigió en los documentos de planning:
+> No es un release — es un erratum documental. Se cruzaron `VCORE_ARCHITECTURE_v1_3.md`, `VCORE_ROADMAP_v1_3.md`, `DEUDA_TECNICA.md`, `LOGFIX.md` y `VCORE_STATE.json` contra el código real (`main.py`, `llm_client.py`, `orchestrator.py`, `curator.py`, `retriever.py`, `gate.py`, `mcp_client.py`, `gate_rules.yaml`, `model_routing.yaml`). Las entradas históricas de este changelog no se modificaron — quedan como registro de lo que se declaró en su momento. Estos son los errores encontrados y lo que se corrigió en los documentos de planning:
 
-- **🔴 Corrección crítica — "Lead model: Kimi K2.6" (entrada v1.3.1 abajo) es incorrecta.** `model_routing.yaml` real decía `enlil_lead.model: z-ai/glm-5.1` al momento de esta auditoría (7 Jul 2026), verificado directamente en el archivo y sin overrides en `llm_client.py` que lo contradigan. Ni GLM-5.2 (lo que decía `VCORE_ARCHITECTURE_v1_3.md`) ni Kimi K2.6 (lo que dice esta entrada de changelog) eran correctos en ese momento. No está claro en qué punto se revirtió de 5.2 a 5.1 sin dejar registro — si fue intencional, falta la entrada de changelog correspondiente. **Nota (8 Jul 2026, DEUDA_TECNICA.md DT-17)**: el lead es estado mutable por hot-swap, no arquitectura fija — para el valor *actual* en cualquier momento, consultar `model_routing.yaml` o `GET /system/model`, no este changelog ni ningún documento narrativo.
+- **🔴 Corrección crítica — "Lead model: Kimi K2.6" (entrada v1.3.1 abajo) es incorrecta.** `model_routing.yaml` real decía `orchestrator_lead.model: z-ai/glm-5.1` al momento de esta auditoría (7 Jul 2026), verificado directamente en el archivo y sin overrides en `llm_client.py` que lo contradigan. Ni GLM-5.2 (lo que decía `VCORE_ARCHITECTURE_v1_3.md`) ni Kimi K2.6 (lo que dice esta entrada de changelog) eran correctos en ese momento. No está claro en qué punto se revirtió de 5.2 a 5.1 sin dejar registro — si fue intencional, falta la entrada de changelog correspondiente. **Nota (8 Jul 2026, DEUDA_TECNICA.md DT-17)**: el lead es estado mutable por hot-swap, no arquitectura fija — para el valor *actual* en cualquier momento, consultar `model_routing.yaml` o `GET /system/model`, no este changelog ni ningún documento narrativo.
 - **🔴 Hallazgo nuevo, no documentado en ningún lado antes de hoy — Approval flow no ejecuta la acción aprobada.** `POST /approvals/{id}/approve` marca el registro como aprobado en SQLite pero no dispara la ejecución de la tool pendiente. El security gate aparenta funcionar en la UI pero la acción autorizada nunca corre. Ver `DEUDA_TECNICA.md` DT-00.
-- **✅ Streaming real ya estaba implementado** — `stream_complete()` existe y está en uso activo en `enlil.py` (comentario en código: `# B8: Streaming real`), con `StreamingResponse`/SSE real en `main.py`. Este trabajo se hizo sin dejar entrada en este changelog, y por eso `VCORE_ROADMAP_v1_3.md` y `DEUDA_TECNICA.md` lo listaban como P0 pendiente durante varias versiones. Corregido en ambos documentos.
+- **✅ Streaming real ya estaba implementado** — `stream_complete()` existe y está en uso activo en `orchestrator.py` (comentario en código: `# B8: Streaming real`), con `StreamingResponse`/SSE real en `main.py`. Este trabajo se hizo sin dejar entrada en este changelog, y por eso `VCORE_ROADMAP_v1_3.md` y `DEUDA_TECNICA.md` lo listaban como P0 pendiente durante varias versiones. Corregido en ambos documentos.
 - **⚠️ "MCP" interno no es protocolo MCP real** — `system/mcp_client.py` es un dispatcher de tools propio (así lo admite su propio docstring), sin SDK oficial `mcp`. `mcp_config.json` (el único server MCP protocol-compliant en el repo) no se carga en ningún punto del runtime. Ver `DEUDA_TECNICA.md` DT-14.
-- **Line counts desincronizados** en `VCORE_ARCHITECTURE_v1_3.md` para `main.py`, `llm_client.py`, `enlil.py`, `shamash.py`, `nisaba.py` — corregidos con conteos reales (`wc -l`) en ese documento.
+- **Line counts desincronizados** en `VCORE_ARCHITECTURE_v1_3.md` para `main.py`, `llm_client.py`, `orchestrator.py`, `curator.py`, `retriever.py` — corregidos con conteos reales (`wc -l`) en ese documento.
 - **DeepSeek V4 Pro crash guard y Nemotron vacío como lead**: confirmados sin fix en código, siguen abiertos tal como los documentos de planning ya indicaban — sin cambios de estado, solo se agregó detalle de causa verificada.
 - **F-12 (`_insert_memory` SQLite, 0 rows)**: confirmado sin fix, y se identificó por qué nadie lo ha resuelto — el método atrapa la excepción real con `except Exception: print(...)` sin loguear el traceback completo, ocultando la causa. Ver `DEUDA_TECNICA.md` DT-13c.
 
@@ -298,10 +298,10 @@ verificación integrada al cierre.
 ## v1.3.1 (2026-07-07)
 
 ### Fixed — Embeddings unificados (P0.2)
-- **NISABA sin fallback**: `_get_embedding()` solo usaba Ollama. Sin Ollama → vector de ceros → búsquedas semánticas rotas.
-- **SHAMASH con fallback duplicado**: `_embed()` tenía 3-tier independiente, no compartido con NISABA.
-- **Fix**: Creado `api/embed.py` — capa unificada `embed()` sync + `embed_async()` async con 3-tier fallback (Ollama → NIM → hash SHA-256). SHAMASH y NISABA importan del mismo módulo. Sin dependencia externa obligatoria.
-- **Archivos**: `api/embed.py` (nuevo), `agents/SHAMASH/shamash.py` (-47 líneas), `agents/NISABA/nisaba.py` (-29 líneas)
+- **Retriever sin fallback**: `_get_embedding()` solo usaba Ollama. Sin Ollama → vector de ceros → búsquedas semánticas rotas.
+- **Curator con fallback duplicado**: `_embed()` tenía 3-tier independiente, no compartido con Retriever.
+- **Fix**: Creado `api/embed.py` — capa unificada `embed()` sync + `embed_async()` async con 3-tier fallback (Ollama → NIM → hash SHA-256). Curator y Retriever importan del mismo módulo. Sin dependencia externa obligatoria.
+- **Archivos**: `api/embed.py` (nuevo), `agents/Curator/curator.py` (-47 líneas), `agents/Retriever/retriever.py` (-29 líneas)
 
 ### Changed — Docs
 - **Lead model**: `AGENTS.md` y `VCORE_ROADMAP_v1_3.md` actualizados — lead real es Kimi K2.6 (no GLM 5.2) ⚠️ **Esta afirmación es incorrecta — ver erratum del 7 Jul 2026 más arriba en este mismo documento.** Ni GLM-5.2 ni Kimi K2.6 eran el lead real; era `z-ai/glm-5.1`. Entrada conservada sin editar como registro histórico de lo que se declaró en ese momento.
@@ -336,7 +336,7 @@ verificación integrada al cierre.
 - **BOM en `rag_index.py` y `rag_query.py`**: removido U+FEFF del inicio. Scripts funcionales de nuevo.
 - **`iterations` SQLite**: tabla muerta eliminada (0 rows, 0 referencias en código)
 - **`manifiesto vcore.txt`**: eliminado (3.7 MB dump de directorio)
-- **`primos.py`**, **`test_enlil.py`**: eliminados (código sin relación con V-Core)
+- **`primos.py`**, **`test_orchestrator.py`**: eliminados (código sin relación con V-Core)
 - **`prototipo.html`** (84 KB) + **`workspace/`** (1.3 MB): archivados en `docs/_archive/`
 - **Scripts NVIDIA legacy**: `nvidia_smoke_test.py`, `nvidia_model_discovery_v2/v3`, `generate_nvidia_report.py`, `nvidia_smoke_results.json` → `scripts/_legacy_backup/`
 - **RAG scripts**: verificados funcionales post-BOM fix. `rag_documents` table lista para usar.
@@ -418,7 +418,7 @@ verificación integrada al cierre.
 - **F-21**: Model label stale ("glm-5.1" hardcodeado → "cargando…")
 - **F-22**: Empty states desactualizados ("0.5" → "1.1", "llava:7b" → "NIM vision")
 - **F-23**: Provider YAML corrupto (`nvidia-deepseek` → `nvidia`)
-- **F-24**: SHAMASH embeddings offline — 3-tier fallback (Ollama → NIM → hash SHA-256)
+- **F-24**: Curator embeddings offline — 3-tier fallback (Ollama → NIM → hash SHA-256)
 - **F-25**: Times New Roman en todo el frontend — body sin `font-family` → `var(--sans)` (Inter)
 - **F-26**: Auto-scroll roto durante streaming — `streaming ||` force-scroll + threshold 60→80px
 - **F-08**: Voice button disabled — `t-disabled` + `disabled` removidos
@@ -450,7 +450,7 @@ verificación integrada al cierre.
 ## v1.0.0 (2026-06-27)
 
 - Migración NVIDIA NIM
-- SHAMASH v2 (memoria semántica ChromaDB)
+- Curator v2 (memoria semántica ChromaDB)
 - MCP como capa de herramientas
 - Observabilidad Langfuse + JSONL
 
@@ -464,7 +464,7 @@ verificación integrada al cierre.
 
 ## v0.8.0
 
-- Arquitectura multi-agente (ENLIL, ENKI, SHAMASH, NISABA)
+- Arquitectura multi-agente (Orchestrator, Planner, Curator, Retriever)
 - Frontend vanilla JS
 - Sidebars redimensionables
 - Monaco Editor

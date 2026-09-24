@@ -12,7 +12,7 @@ Principio de fail-safe: cualquier tool desconocida, o cualquier
 path que no se pueda resolver dentro de un allowed_root, se trata
 como Nivel B. Ante la duda, se pregunta.
 
-No importa lo que ENLIL "declare" o "crea" haber hecho -- esta
+No importa lo que Orchestrator "declare" o "crea" haber hecho -- esta
 funcion es la unica fuente de verdad sobre el nivel de una accion.
 Esto es deliberado: mitiga el riesgo de que un resumen/compactacion
 de contexto le haga "olvidar" a un agente que algo requeria Nivel B.
@@ -21,7 +21,7 @@ Uso:
     from gate import Gate
 
     gate = Gate("gate_rules.yaml", db_path="vcore.db")
-    decision = gate.evaluate("write_file", {"path": "C:\\...\\workspace\\foo.txt"}, agent_id="ENKI")
+    decision = gate.evaluate("write_file", {"path": "C:\\...\\workspace\\foo.txt"}, agent_id="Planner")
 
     if decision.auto_approved:
         # ejecutar tool directamente, y loguear (ya lo hace evaluate())
@@ -52,7 +52,7 @@ class GateDecision:
 
     Campos v2 (`effect`, `risk`, `rule_id`, `request_id`) son la decisión real.
     `nivel` y `auto_approved` se conservan porque `files_api.py`, `shell_api.py`,
-    `search_api.py`, `enki.py` y `nisaba.py` ya los consumen: se derivan del
+    `search_api.py`, `planner.py` y `retriever.py` ya los consumen: se derivan del
     efecto para no romperlos.
 
     `effect`:
@@ -713,8 +713,8 @@ if __name__ == "__main__":
             "read_file": ["path"],
         },
         "agent_path_allowlist": {
-            "ENKI": ["C:/workspace", "C:/workspace/agents"],
-            "NISABA": ["C:/workspace"],
+            "Planner": ["C:/workspace", "C:/workspace/agents"],
+            "Retriever": ["C:/workspace"],
             "UNKNOWN": ["C:/workspace"],
         }
     }
@@ -728,31 +728,31 @@ if __name__ == "__main__":
     gate = Gate(rules_path, db_path)
 
     # Test 1: read_only -> Nivel A
-    decision = gate.evaluate("read_file", {"path": "C:/workspace/data.txt"}, agent_id="ENKI")
+    decision = gate.evaluate("read_file", {"path": "C:/workspace/data.txt"}, agent_id="Planner")
     print(decision)
 
     # Test 2: write_scoped dentro de workspace -> Nivel A
-    decision = gate.evaluate("write_file", {"path": "C:/workspace/output/result.txt"}, agent_id="ENKI")
+    decision = gate.evaluate("write_file", {"path": "C:/workspace/output/result.txt"}, agent_id="Planner")
     print(decision)
 
     # Test 3: write_scoped con path fuera de workspace -> Nivel B
-    decision = gate.evaluate("write_file", {"path": "C:/temp/out.txt"}, agent_id="ENKI")
+    decision = gate.evaluate("write_file", {"path": "C:/temp/out.txt"}, agent_id="Planner")
     print(decision)
 
     # Test 4: write_scoped con path relativo -> se resuelve respecto a workspace
-    decision = gate.evaluate("write_file", {"path": "relative/inside.txt"}, agent_id="ENKI")
+    decision = gate.evaluate("write_file", {"path": "relative/inside.txt"}, agent_id="Planner")
     print(decision)
 
     # Test 5: always_b -> Nivel B
-    decision = gate.evaluate("delete_file", {"file_path": "C:/workspace/old.txt"}, agent_id="ENKI")
+    decision = gate.evaluate("delete_file", {"file_path": "C:/workspace/old.txt"}, agent_id="Planner")
     print(decision)
 
     # Test 6: tool desconocida -> Nivel B
-    decision = gate.evaluate("non_existent", {}, agent_id="ENKI")
+    decision = gate.evaluate("non_existent", {}, agent_id="Planner")
     print(decision)
 
     # Test 7: read_only fuera de allowlist -> Nivel B
-    decision = gate.evaluate("read_file", {"path": "C:/temp/secret.txt"}, agent_id="NISABA")
+    decision = gate.evaluate("read_file", {"path": "C:/temp/secret.txt"}, agent_id="Retriever")
     print(decision)
 
     # Test 8: agente sin allowlist -> Nivel B

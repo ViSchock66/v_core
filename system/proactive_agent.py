@@ -128,7 +128,7 @@ def _get_inactivity_since(state: dict) -> float:
     if not last_action:
         return 0
     # Intentar extraer timestamp de ultima_accion_real
-    # Formato: "ENLIL respondió consulta simple | task_id=..."
+    # Formato: "Orchestrator respondió consulta simple | task_id=..."
     # No tiene timestamp explícito, usamos fecha de actualización del state
     state_updated = state.get("fecha_actualizacion", "")
     if state_updated:

@@ -3,7 +3,7 @@
 # venv de otro entorno).
 #
 # El puerto sale de VCORE_PORT; si no esta definido, usa el default de
-# api/ports.py. Asi el CLI, los MCP servers y ENLIL apuntan al mismo lugar.
+# api/ports.py. Asi el CLI, los MCP servers y Orchestrator apuntan al mismo lugar.
 set -e
 cd "$(dirname "$0")"
 export PYTHONPATH=""

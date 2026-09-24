@@ -57,7 +57,7 @@ const COMPACTABLE_TOOLS = new Set([
 ```
 
 **Esto contrasta de forma brutal con V-Core.** Nosotros truncamos *todos* los
-resultados a 800 caracteres *siempre* (`enlil.py:752`). Claude Code **conserva el
+resultados a 800 caracteres *siempre* (`orchestrator.py:752`). Claude Code **conserva el
 resultado completo y vacía solo los viejos**. Nosotros tenemos lo peor de ambos
 mundos: el modelo nunca ve el contenido íntegro **y** no tenemos política de
 expiración.
@@ -370,7 +370,7 @@ El bloque de motor deja de ser genérico: son **fugas medidas y contrastadas**.
 
 | Fuga de V-Core | Evidencia propia | Cómo lo resuelven ellos |
 |---|---|---|
-| Resultados cortados a 800 chars | `enlil.py:752,837,899,959` | Claude Code: completos, vacía solo viejos |
+| Resultados cortados a 800 chars | `orchestrator.py:752,837,899,959` | Claude Code: completos, vacía solo viejos |
 | Sin compactación | `compact` → 0 ocurrencias | Claude Code: 3 niveles; Pi: lossless |
 | Historial truncado duro | `history[-10:]` (`:572`, `:1276`) | Claude Code: resumen de 9 secciones |
 | Prompt fijo de ~5.224 tokens por iteración | Medido | Pi: ~200; Claude Code: ~10.000 con guardrails |

@@ -1,7 +1,7 @@
 """
-agents/SHAMASH/memory.py
+agents/Curator/memory.py
 =========================
-Motor de memoria de SHAMASH — deduplicación, búsqueda semántica, historial.
+Motor de memoria de Curator — deduplicación, búsqueda semántica, historial.
 
 Principios:
 - Privado: cero llamadas externas. Embeddings via Ollama local.
@@ -33,7 +33,7 @@ from api.embed import (
 # ── Paths ──────────────────────────────────────────────────────────
 BASE_DIR    = Path(__file__).resolve().parent.parent.parent
 DB_PATH     = BASE_DIR / "vcore.db"
-# Almacén Chroma compartido con NISABA (ver api/embed.py): una sola ruta, un
+# Almacén Chroma compartido con Retriever (ver api/embed.py): una sola ruta, un
 # solo cliente. Tener dos rutas fue la causa de que la memoria y el RAG
 # vivieran en bases distintas.
 CHROMA_PATH = CHROMA_DIR
@@ -61,7 +61,7 @@ class SearchResult(BaseModel):
 
 # ── Engine ─────────────────────────────────────────────────────────
 
-class SHAMASHMemory:
+class CuratorMemory:
     """Motor de memoria con deduplicación y búsqueda semántica."""
 
     def __init__(self):
@@ -99,7 +99,7 @@ class SHAMASHMemory:
     def _get_chroma(self):
         """Cliente ChromaDB compartido (ver `api/embed.py`).
 
-        El almacén, la ruta y el cliente son compartidos con NISABA: antes cada
+        El almacén, la ruta y el cliente son compartidos con Retriever: antes cada
         agente construía el suyo con rutas distintas, así que podían escribir en
         bases diferentes sin que nadie lo notara.
         """
@@ -479,4 +479,4 @@ class SHAMASHMemory:
         return count
 
 # Singleton — misma instancia en todo el sistema
-nem0 = SHAMASHMemory()
+nem0 = CuratorMemory()

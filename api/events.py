@@ -128,10 +128,10 @@ class AgentEvent:
 
 
 # ---------------------------------------------------------------------------
-# Traducción desde los eventos internos de ENLIL
+# Traducción desde los eventos internos de Orchestrator
 # ---------------------------------------------------------------------------
 
-# ENLIL emite dicts con la clave `__event__` (o strings sueltos para texto).
+# Orchestrator emite dicts con la clave `__event__` (o strings sueltos para texto).
 # Este mapa traduce esos nombres internos al protocolo público. La traducción
 # vive acá, en el borde, y no en cada tool: es lo que permite cambiar el
 # formato interno sin tocar el contrato con el cliente.
@@ -151,7 +151,7 @@ _INTERNAL_TO_CANONICAL: dict[str, str] = {
 
 
 def canonical_from_internal(chunk: Any) -> Optional[AgentEvent]:
-    """Convierte un chunk interno de ENLIL en un `AgentEvent`.
+    """Convierte un chunk interno de Orchestrator en un `AgentEvent`.
 
     Devuelve None si el chunk no es un evento (p. ej. un string vacío).
     """
@@ -348,7 +348,7 @@ class EventStore:
 class RunRecorder:
     """Asigna `seq` monotónico a cada evento de un run y los persiste.
 
-    El `seq` se asigna en el orden en que el generador de ENLIL los produce, que
+    El `seq` se asigna en el orden en que el generador de Orchestrator los produce, que
     es el mismo orden en que llegan al cliente. Eso es lo que hace que el replay
     desde el log reproduzca exactamente la misma secuencia que se vio en vivo.
     """

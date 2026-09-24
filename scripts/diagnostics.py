@@ -95,10 +95,10 @@ async def run_diagnostics():
     # 5. Agentes con codigo real
     print("\n[5] AGENTES CON CODIGO:")
     agent_dirs = [
-        ("ENLIL", "enlil.py"),
-        ("ENKI", "enki.py"),
-        ("SHAMASH", "shamash.py"),
-        ("NISABA", "nisaba.py"),
+        ("Orchestrator", "orchestrator.py"),
+        ("Planner", "planner.py"),
+        ("Curator", "curator.py"),
+        ("Retriever", "retriever.py"),
     ]
     for name, main_file in agent_dirs:
         p = Path(f"agents/{name}/{main_file}")

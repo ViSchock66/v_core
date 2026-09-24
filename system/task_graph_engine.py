@@ -3,12 +3,12 @@ system/task_graph_engine.py
 ===========================
 Task Graph Engine — V-CORE v1.1
 
-Ejecuta los nodos del Task Graph que ENLIL genera y valida.
+Ejecuta los nodos del Task Graph que Orchestrator genera y valida.
 Cada nodo se ejecuta en orden segun sus dependencias (DAG).
 
 Flujo:
   1. Recibe un TaskGraph validado
-  2. Inicia con el nodo SHAMASH/context (hook obligatorio)
+  2. Inicia con el nodo Curator/context (hook obligatorio)
   3. Ejecuta cada nodo segun su tipo de agente
   4. Pausa en nodos con ask_approval=true
   5. Persiste todo en agent_execution
@@ -46,7 +46,7 @@ WORKSPACE_DIR = BASE_DIR / "workspace"
 
 NODE_TIMEOUT = 60  # timeout por nodo en segundos
 NODE_TIMEOUT_MAP = {
-    "plan_diff": 120,      # ENKI plan_diff usa LLM → necesita más tiempo
+    "plan_diff": 120,      # Planner plan_diff usa LLM → necesita más tiempo
     "visual_audit": 120,    # Playwright + NIM vision puede tardar
     "web_search": 30,      # Búsqueda web externa
     "execute_command": 30, # Comandos shell con timeout
@@ -65,7 +65,7 @@ CLEANUP_INTERVAL = 300  # intervalo de limpieza en segundos (5 min)
 # =============================================================================
 
 class ExecutionNode(BaseModel):
-    """Nodo individual en ejecucion. Compatible con TaskGraphNode de ENLIL."""
+    """Nodo individual en ejecucion. Compatible con TaskGraphNode de Orchestrator."""
     id: str
     agent: Optional[str] = None
     action: str
@@ -103,8 +103,8 @@ class TaskGraphEngine:
 
     Responsabilidades:
       - Ejecutar nodos en orden DAG
-      - Inyectar contexto SHAMASH primero (hook obligatorio)
-      - Rutear a ENKI/ENLIL segun el nodo
+      - Inyectar contexto Curator primero (hook obligatorio)
+      - Rutear a Planner/Orchestrator segun el nodo
       - Pausar en ask_approval
       - Persistir todo en agent_execution
       - startup_recovery en inicio
@@ -112,34 +112,34 @@ class TaskGraphEngine:
     """
 
     def __init__(self):
-        self._shamash = None
-        self._enki = None
-        self._nisaba = None
+        self._curator = None
+        self._planner = None
+        self._retriever = None
 
     # ------------------------------------------------------------------
     # Lazy imports de agentes (evitar circular imports)
     # ------------------------------------------------------------------
 
     @property
-    def shamash(self):
-        if self._shamash is None:
-            from agents.SHAMASH.shamash import SHAMASH
-            self._shamash = SHAMASH()
-        return self._shamash
+    def curator(self):
+        if self._curator is None:
+            from agents.Curator.curator import Curator
+            self._curator = Curator()
+        return self._curator
 
     @property
-    def enki(self):
-        if self._enki is None:
-            from agents.ENKI.enki import ENKI
-            self._enki = ENKI()
-        return self._enki
+    def planner(self):
+        if self._planner is None:
+            from agents.Planner.planner import Planner
+            self._planner = Planner()
+        return self._planner
 
     @property
-    def nisaba(self):
-        if self._nisaba is None:
-            from agents.NISABA.nisaba import NISABA
-            self._nisaba = NISABA()
-        return self._nisaba
+    def retriever(self):
+        if self._retriever is None:
+            from agents.Retriever.retriever import Retriever
+            self._retriever = Retriever()
+        return self._retriever
 
     # ------------------------------------------------------------------
     # Persistencia del grafo
@@ -274,15 +274,15 @@ class TaskGraphEngine:
             if progress_callback:
                 progress_callback({"type": "start", "task_id": task_id, "node_count": len(nodes)})
 
-            # Verificar hook SHAMASH
+            # Verificar hook Curator
             entry = self._find_entry_node(nodes)
-            if entry and entry.agent == "SHAMASH" and entry.action == "inject_project_context":
+            if entry and entry.agent == "Curator" and entry.action == "inject_project_context":
                 await self._execute_node(entry, task_id, shared_context, progress_callback)
                 if entry.status == "SUCCESS" and entry.result:
                     try:
-                        shared_context["shamash_context"] = entry.result
+                        shared_context["curator_context"] = entry.result
                     except Exception:
-                        shared_context["shamash_context"] = str(entry.result)
+                        shared_context["curator_context"] = str(entry.result)
 
             # Ejecutar en topologico con ordenamiento DAG
             execution_order = self._topological_sort(nodes)
@@ -295,8 +295,8 @@ class TaskGraphEngine:
                         progress_callback({"type": "node_skip", "node_id": node.id, "reason": "already_completed"})
                     continue
 
-                # Saltar SHAMASH ya ejecutado
-                if node.agent == "SHAMASH" and node.action == "inject_project_context":
+                # Saltar Curator ya ejecutado
+                if node.agent == "Curator" and node.action == "inject_project_context":
                     if node.status != "SUCCESS":
                         node.status = "SUCCESS"
                         self._log_execution(node, task_id)
@@ -431,31 +431,31 @@ class TaskGraphEngine:
             action = node.action
             timeout = NODE_TIMEOUT_MAP.get(action, NODE_TIMEOUT)
             async with asyncio.timeout(timeout):
-                shamash_ctx = shared_context.get("shamash_context", "")
+                curator_ctx = shared_context.get("curator_context", "")
 
-                # --- SHAMASH ---
-                if agent == "SHAMASH":
+                # --- Curator ---
+                if agent == "Curator":
                     if action == "inject_project_context":
-                        ctx = self.shamash.inject_project_context()
+                        ctx = self.curator.inject_project_context()
                         node.result = ctx.model_dump_json() if hasattr(ctx, "model_dump_json") else json.dumps(ctx)
                     elif action == "get_architecture":
-                        node.result = self.shamash.get_architecture()
+                        node.result = self.curator.get_architecture()
                     elif action == "get_recent_work":
-                        work = self.shamash.get_recent_work()
+                        work = self.curator.get_recent_work()
                         node.result = json.dumps(work)
                     elif action == "summarize_file":
-                        node.result = self.shamash.summarize_file(shamash_ctx or ".")
+                        node.result = self.curator.summarize_file(curator_ctx or ".")
                     elif action == "estimate_repo_size":
-                        size = self.shamash.estimate_repo_size()
+                        size = self.curator.estimate_repo_size()
                         node.result = json.dumps({"size_kb": size})
                     else:
-                        node.result = f"SHAMASH action desconocida: {action}"
+                        node.result = f"Curator action desconocida: {action}"
 
-                # --- ENKI ---
-                elif agent == "ENKI":
+                # --- Planner ---
+                elif agent == "Planner":
                     if action == "plan_diff":
-                        proposal = await self.enki.plan_diff(
-                            context=shamash_ctx or "Contexto de archivo",
+                        proposal = await self.planner.plan_diff(
+                            context=curator_ctx or "Contexto de archivo",
                             task=shared_context.get("task_description", task_id),
                         )
                         node.result = proposal.model_dump_json() if hasattr(proposal, "model_dump_json") else json.dumps(proposal)
@@ -464,11 +464,11 @@ class TaskGraphEngine:
                         # Recuperar diff proposal del contexto y deserializar
                         diff_json = shared_context.get("diff_proposal")
                         if diff_json:
-                            from agents.ENKI.enki import DiffProposal
+                            from agents.Planner.planner import DiffProposal
                             diff_data = json.loads(diff_json) if isinstance(diff_json, str) else diff_json
                             proposal = DiffProposal(**diff_data)
                             try:
-                                self.enki.apply_diff(proposal)
+                                self.planner.apply_diff(proposal)
                                 node.result = json.dumps({"status": "applied", "file": proposal.file})
                                 shared_context["apply_ok"] = True
                             except ValueError as ve:
@@ -482,7 +482,7 @@ class TaskGraphEngine:
                         diff_json = shared_context.get("diff_proposal", "{}")
                         diff_data = json.loads(diff_json) if isinstance(diff_json, str) else diff_json
                         target_file = diff_data.get("file", ".")
-                        vr = self.enki.shadow_verify(target_file)
+                        vr = self.planner.shadow_verify(target_file)
                         node.result = vr.model_dump_json() if hasattr(vr, "model_dump_json") else json.dumps(vr)
                         if vr.passed:
                             shared_context["verify_ok"] = True
@@ -493,10 +493,10 @@ class TaskGraphEngine:
                         new_str = shared_context.get("patch_new", "")
                         node.result = self._patch_file(target, old_str, new_str)
                     else:
-                        node.result = f"ENKI action desconocida: {action}"
+                        node.result = f"Planner action desconocida: {action}"
 
-                # --- ENLIL ---
-                elif agent == "ENLIL":
+                # --- Orchestrator ---
+                elif agent == "Orchestrator":
                     if action == "validate_diffs":
                         # E-03: Auditoría real — verifica diff, apply y verify
                         diff_json = shared_context.get("diff_proposal")
@@ -527,7 +527,7 @@ class TaskGraphEngine:
                         # F-01: Auditoría visual — Playwright sync en thread
                         import asyncio as _asyncio, traceback as _tb, sys as _sys
                         try:
-                            node.result = await _asyncio.to_thread(self._run_visual_audit_sync, shamash_ctx or "")
+                            node.result = await _asyncio.to_thread(self._run_visual_audit_sync, curator_ctx or "")
                         except Exception as _ex:
                             _tb.print_exc(file=_sys.stderr)
                             node.result = json.dumps({"error": str(_ex), "status": "failed"})
@@ -535,24 +535,24 @@ class TaskGraphEngine:
                             node.error = str(_ex)[:200]
                     elif action == "screenshot_report":
                         import asyncio as _asyncio
-                        node.result = await _asyncio.to_thread(self._run_visual_audit_sync, shamash_ctx or "", False)
+                        node.result = await _asyncio.to_thread(self._run_visual_audit_sync, curator_ctx or "", False)
                     elif action == "web_search":
                         # H-01: Búsqueda web — DuckDuckGo HTML (sin API key)
-                        node.result = await self._web_search(shamash_ctx or "")
+                        node.result = await self._web_search(curator_ctx or "")
                     elif action == "execute_command":
                         # H-02: Ejecutar comando shell (con timeout y safety)
-                        cmd = shared_context.get("shell_command", shamash_ctx or "")
+                        cmd = shared_context.get("shell_command", curator_ctx or "")
                         node.result = await self._execute_command(cmd)
                     else:
-                        node.result = f"ENLIL action desconocida: {action}"
+                        node.result = f"Orchestrator action desconocida: {action}"
 
-                # --- NISABA ---
-                elif agent == "NISABA":
+                # --- Retriever ---
+                elif agent == "Retriever":
                     if action == "search":
-                        # E-04: Búsqueda real en ChromaDB via NISABA
-                        query = shamash_ctx[:500] if shamash_ctx else shared_context.get("task_description", "")
+                        # E-04: Búsqueda real en ChromaDB via Retriever
+                        query = curator_ctx[:500] if curator_ctx else shared_context.get("task_description", "")
                         try:
-                            results = await self.nisaba.search(query, n=5)
+                            results = await self.retriever.search(query, n=5)
                             node.result = json.dumps({
                                 "query": query[:200],
                                 "results_count": len(results),
@@ -561,18 +561,18 @@ class TaskGraphEngine:
                         except Exception as e:
                             node.result = json.dumps({
                                 "query": query[:200],
-                                "error": f"NISABA.search falló: {e}",
+                                "error": f"Retriever.search falló: {e}",
                                 "fallback": True,
                             })
                     elif action == "get_impact_map":
-                        impact = self.nisaba.get_impact_map(".")
+                        impact = self.retriever.get_impact_map(".")
                         node.result = json.dumps(impact)
                     else:
-                        node.result = f"NISABA action desconocida: {action}"
+                        node.result = f"Retriever action desconocida: {action}"
 
                 # --- Sistema (return_to_user) ---
                 elif action == "return_to_user":
-                    node.result = json.dumps({"status": "returned_to_user", "context": shamash_ctx[:500]})
+                    node.result = json.dumps({"status": "returned_to_user", "context": curator_ctx[:500]})
                 else:
                     node.result = f"Agente desconocido: {agent}"
 
@@ -674,7 +674,7 @@ class TaskGraphEngine:
     # ------------------------------------------------------------------
 
     async def _run_visual_audit(self, instructions: str = "", analyze: bool = True) -> str:
-        """Auditoría visual — versión async para el loop de ENLIL.
+        """Auditoría visual — versión async para el loop de Orchestrator.
 
         Los comandos `/audit`, `/viz` y el polish loop llamaban a este método y no
         existía (AttributeError). Se delega a la versión síncrona en un hilo,
@@ -718,7 +718,7 @@ class TaskGraphEngine:
         try:
             q = urllib.parse.quote(query[:200])
             url = f"https://api.duckduckgo.com/?q={q}&format=json&no_html=1&skip_disambig=1"
-            req = urllib.request.Request(url, headers={"User-Agent": "V-Core/0.8 ENLIL"})
+            req = urllib.request.Request(url, headers={"User-Agent": "V-Core/0.8 Orchestrator"})
             resp = urllib.request.urlopen(req, timeout=15)
             data = json.loads(resp.read().decode("utf-8", errors="replace"))
             

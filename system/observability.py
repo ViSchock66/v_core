@@ -4,8 +4,8 @@ system/observability.py
 VCoreTracer — observabilidad unificada de V-CORE (B3).
 
 Emite traces a Langfuse por cada evento relevante del sistema:
-  - Iteraciones del agent loop de ENLIL (tool usada, tokens, duración)
-  - Diffs de ENKI (archivo, outcome, user_corrected flag)
+  - Iteraciones del agent loop de Orchestrator (tool usada, tokens, duración)
+  - Diffs de Planner (archivo, outcome, user_corrected flag)
   - Screenshots del Visual Auditor (findings count, instrucción)
 
 Diseño:
@@ -36,7 +36,7 @@ Uso:
         duration_ms=450,
     )
 
-    # En ENKI
+    # En Planner
     tracer.trace_diff(
         task_id="abc123",
         file="web/src/App.tsx",
@@ -73,7 +73,7 @@ def _safe_print(msg: str) -> None:
     Contrato del modulo: "El sistema NUNCA falla por ausencia de
     observabilidad". El status incluye emoji (⚠ / ✅) y en Windows con stdout
     no interactivo (cp1252) eso lanzaba UnicodeEncodeError desde
-    VCoreTracer.__init__, que corre dentro del agent loop de ENLIL y mataba
+    VCoreTracer.__init__, que corre dentro del agent loop de Orchestrator y mataba
     el chat antes de llegar al modelo. api/main.py ya fuerza UTF-8 en los
     streams del server; esta guarda cubre cualquier otro entry point
     (scripts, CLI, imports directos) que no pase por ahi.
@@ -270,7 +270,7 @@ class VCoreTracer:
         is_final: bool = False,
     ) -> None:
         """
-        Emite un trace por cada iteración del agent loop de ENLIL.
+        Emite un trace por cada iteración del agent loop de Orchestrator.
 
         Args:
             task_id: ID de la tarea (uuid)
@@ -300,7 +300,7 @@ class VCoreTracer:
         if self._langfuse.enabled:
             if iteration == 0 and task_id not in self._session_traces:
                 trace_id = self._langfuse.trace(
-                    name=f"enlil_task_{task_id[:8]}",
+                    name=f"orchestrator_task_{task_id[:8]}",
                     metadata={"task_id": task_id, "model": model},
                     input_data={"message": result},
                 )
@@ -318,7 +318,7 @@ class VCoreTracer:
                     )
 
     # ─────────────────────────────────────────────────────────────────
-    # ENKI DIFF TRACES
+    # Planner DIFF TRACES
     # ─────────────────────────────────────────────────────────────────
 
     def trace_diff(
@@ -332,7 +332,7 @@ class VCoreTracer:
         diff_size_chars: int = 0,
     ) -> None:
         """
-        Emite un trace por cada diff aplicado por ENKI.
+        Emite un trace por cada diff aplicado por Planner.
 
         Args:
             task_id: ID de la tarea
@@ -353,14 +353,14 @@ class VCoreTracer:
             "diff_size_chars": diff_size_chars,
         }
 
-        self._local.write("enki_diff", data)
+        self._local.write("planner_diff", data)
 
         if self._langfuse.enabled:
             trace_id = self._session_traces.get(task_id)
             if trace_id:
                 self._langfuse.span(
                     trace_id=trace_id,
-                    name=f"enki_diff_{Path(file).name}",
+                    name=f"planner_diff_{Path(file).name}",
                     metadata=data,
                     input_data={"file": file},
                     output_data={"outcome": outcome, "user_corrected": user_corrected},
@@ -368,7 +368,7 @@ class VCoreTracer:
             else:
                 # Diff sin task_id previo (ej: aplicado fuera del loop)
                 self._langfuse.trace(
-                    name=f"enki_diff_{Path(file).name}",
+                    name=f"planner_diff_{Path(file).name}",
                     metadata=data,
                     input_data={"file": file},
                     output_data={"outcome": outcome},
@@ -451,7 +451,7 @@ class VCoreTracer:
         session = [t for t in traces if t.get("task_id") == task_id]
 
         tool_calls = [t for t in session if t.get("event") == "agent_loop" and t.get("tool")]
-        diffs = [t for t in session if t.get("event") == "enki_diff"]
+        diffs = [t for t in session if t.get("event") == "planner_diff"]
         audits = [t for t in session if t.get("event") == "visual_audit"]
 
         total_tokens = sum(t.get("tokens", 0) for t in session if t.get("event") == "agent_loop")

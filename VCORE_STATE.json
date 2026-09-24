@@ -8,10 +8,10 @@
   "modelos_en_vram": [],
   "ultima_accion_real": "",
   "agentes_disponibles": [
-    "ENLIL",
-    "SHAMASH",
-    "ENKI",
-    "NISABA"
+    "Orchestrator",
+    "Curator",
+    "Planner",
+    "Retriever"
   ],
   "agentes_pendientes": [],
   "mcp_activos": [
@@ -27,13 +27,13 @@
     "audit.py",
     "capture_frontend.py"
   ],
-  "enlil_backend": "nvidia",
-  "enlil_lead_model": "z-ai/glm-5.3",
-  "enlil_council_model": "moonshotai/kimi-k3",
-  "enlil_escalation_model": "nvidia/nemotron-3-ultra-550b-a55b",
-  "enki_plan_model": "nvidia/nemotron-3-super-120b-a12b",
-  "enki_apply_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-  "_shamash_note": "SHAMASH no es un agente con modelo LLM — es capa de persistencia (SQLite + ChromaDB). Su campo 'shamash_model' se elimino en 2.0.0: apuntaba a un modelo retirado y se sincronizaba desde model_routing.yaml sin efecto real.",
+  "orchestrator_backend": "nvidia",
+  "orchestrator_lead_model": "z-ai/glm-5.3",
+  "orchestrator_council_model": "moonshotai/kimi-k3",
+  "orchestrator_escalation_model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "planner_plan_model": "nvidia/nemotron-3-super-120b-a12b",
+  "planner_apply_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "_curator_note": "Curator no es un agente con modelo LLM — es capa de persistencia (SQLite + ChromaDB). Su campo 'curator_model' se elimino en 2.0.0: apuntaba a un modelo retirado y se sincronizaba desde model_routing.yaml sin efecto real.",
   "v2_resumen": "v2.0.0 — cambio de contrato. Motor de permisos (PDP/PEP/HITL), capa de embeddings reparada, workspace por sesion, catalogo de modelos vivos con soporte de reasoning_content.",
   "nvidia_nim_base_url": "https://integrate.api.nvidia.com/v1",
   "tokens_sesion": 0,

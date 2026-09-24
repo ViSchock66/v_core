@@ -55,7 +55,7 @@ export default function App() {
   const setOpenArtifact = useChat((s) => s.openArtifact)
 
   const models = useQuery({ queryKey: ['models'], queryFn: api.models, refetchInterval: 20000 })
-  const lead = models.data?.enlil_lead
+  const lead = models.data?.orchestrator_lead
 
   const thread = activeThread ? chat.threads[activeThread] : null
   const runs = thread?.runs ?? []

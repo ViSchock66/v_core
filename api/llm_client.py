@@ -22,12 +22,12 @@ Uso:
     from api.llm_client import get_router
 
     router = get_router()
-    response = await router.complete(role="enlil_lead", messages=[...])
-    response = await router.complete(role="enki_plan", messages=[...], system="...")
+    response = await router.complete(role="orchestrator_lead", messages=[...])
+    response = await router.complete(role="planner_plan", messages=[...], system="...")
 
     # Council mode
     result = await router.council(
-        roles=["enlil_lead", "enlil_council"],
+        roles=["orchestrator_lead", "orchestrator_council"],
         messages=[...]
     )
     if result.diverged:
@@ -879,7 +879,7 @@ class OllamaClient(LLMClient):
         Usa /api/generate con prompt ChatML construido manualmente.
         Los modelos Ollama locales con Modelfile templates (ej: {{ .System }}/{{ .Prompt }})
         solo funcionan con /api/generate. /api/chat bypasea el template y
-        el system prompt nunca llega al modelo — ENLIL pierde identidad.
+        el system prompt nunca llega al modelo — Orchestrator pierde identidad.
         """
         import aiohttp
         start = time.time()
@@ -1089,7 +1089,7 @@ class LLMRouter:
 
     Uso:
         router = get_router()
-        response = await router.complete(role="enlil_lead", messages=[...])
+        response = await router.complete(role="orchestrator_lead", messages=[...])
     """
 
     def __init__(self, config_path: str = "model_routing.yaml"):
@@ -1444,7 +1444,7 @@ class LLMRouter:
                             accumulated_tokens_out += 1  # rough estimate
                             yield chunk
                         elif chunk.type == "reasoning":
-                            # Se reenvía tal cual: ENLIL lo convierte en evento
+                            # Se reenvía tal cual: Orchestrator lo convierte en evento
                             # `reasoning` para el frontend, que lo muestra en un
                             # bloque colapsable. NO se suma a accumulated_content:
                             # el razonamiento no es la respuesta.
@@ -1636,8 +1636,8 @@ class LLMRouter:
         - Retorna dict con status y el cambio realizado
 
         Uso:
-            router.hot_swap("enlil_lead", "moonshotai/kimi-k2.6")
-            router.hot_swap("enlil_lead", "deepseek-ai/deepseek-v4-flash", provider="nvidia")
+            router.hot_swap("orchestrator_lead", "moonshotai/kimi-k2.6")
+            router.hot_swap("orchestrator_lead", "deepseek-ai/deepseek-v4-flash", provider="nvidia")
         """
         roles = self.config.get("roles", {})
         if role not in roles:
@@ -1732,14 +1732,14 @@ class LLMRouter:
                 state = json.load(f)
             # Mapear rol → campo en STATE
             role_to_state_key = {
-                "enlil_lead": "enlil_lead_model",
-                "enlil_council": "enlil_council_model",
-                "enlil_escalation": "enlil_escalation_model",
-                "enki_plan": "enki_plan_model",
-                "enki_apply": "enki_apply_model",
-                "enki_escalation": "enki_escalation_model",
-                "shamash": "shamash_model",
-                "nisaba": "nisaba_model",
+                "orchestrator_lead": "orchestrator_lead_model",
+                "orchestrator_council": "orchestrator_council_model",
+                "orchestrator_escalation": "orchestrator_escalation_model",
+                "planner_plan": "planner_plan_model",
+                "planner_apply": "planner_apply_model",
+                "planner_escalation": "planner_escalation_model",
+                "curator": "curator_model",
+                "retriever": "retriever_model",
             }
             key = role_to_state_key.get(role)
             if key:
@@ -1861,10 +1861,10 @@ if __name__ == "__main__":
             cfg = router._get_role_config(role)
             print(f"  {role}: {cfg['provider']} / {cfg['model']}")
 
-        print("\n[3] Test completion (enlil_lead -> Gemini):")
+        print("\n[3] Test completion (orchestrator_lead -> Gemini):")
         try:
             response = await router.complete(
-                role="enlil_lead",
+                role="orchestrator_lead",
                 messages=[{"role": "user", "content": "Di 'hola' en una palabra."}],
                 agent_name="smoke_test",
             )

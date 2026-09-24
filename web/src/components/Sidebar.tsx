@@ -7,18 +7,18 @@ import { Button, Chip, Icon, ICONS, cx } from '@/components/ui'
 
 /** Los roles que tienen modelo propio y son cambiables desde la UI. */
 const EDITABLE_ROLES: Array<{ id: string; label: string; hint: string }> = [
-  { id: 'enlil_lead', label: 'Lead', hint: 'Orquestación y conversación' },
-  { id: 'enlil_council', label: 'Council', hint: 'Segunda opinión en paralelo' },
-  { id: 'enlil_escalation', label: 'Escalation', hint: 'Casos complejos' },
-  { id: 'enki_plan', label: 'ENKI plan', hint: 'Planificación de cambios' },
-  { id: 'enki_apply', label: 'ENKI apply', hint: 'Aplicación de diffs' },
+  { id: 'orchestrator_lead', label: 'Lead', hint: 'Orquestación y conversación' },
+  { id: 'orchestrator_council', label: 'Council', hint: 'Segunda opinión en paralelo' },
+  { id: 'orchestrator_escalation', label: 'Escalation', hint: 'Casos complejos' },
+  { id: 'planner_plan', label: 'Planner plan', hint: 'Planificación de cambios' },
+  { id: 'planner_apply', label: 'Planner apply', hint: 'Aplicación de diffs' },
 ]
 
 /**
  * Selector de modelos.
  *
  * El frontend anterior mostraba el nombre del modelo sin decir de qué **rol**
- * era, permitía cambiar solo `enlil_lead`, y pedía el catálogo con
+ * era, permitía cambiar solo `orchestrator_lead`, y pedía el catálogo con
  * `provider=nvidia` hardcodeado. Acá se muestra rol + modelo + estado del
  * circuit breaker, y se puede cambiar cualquier rol con modelo propio.
  *
@@ -38,7 +38,7 @@ function ModelPicker() {
     staleTime: 60000,
   })
 
-  const lead = models.data?.enlil_lead
+  const lead = models.data?.orchestrator_lead
 
   async function swap(role: string, modelId: string) {
     setBusy(role)

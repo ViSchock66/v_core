@@ -7,7 +7,7 @@ Arquitectura:
     uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload
 
 El puerto canonico vive en api/ports.py (override con VCORE_PORT). El CLI,
-los MCP servers y ENLIL lo resuelven desde ahi para no volver a divergir.
+los MCP servers y Orchestrator lo resuelven desde ahi para no volver a divergir.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from typing import Any, AsyncGenerator
 # archivo, servicio, CI) Python lo abre con la codificacion local (cp1252) y
 # cualquier print() con emoji (⚠, ✅) revienta con UnicodeEncodeError. Ese
 # error se propagaba desde VCoreTracer.__init__ dentro del agent loop de
-# ENLIL y mataba el chat antes de llegar al modelo. Forzar UTF-8 en los dos
+# Orchestrator y mataba el chat antes de llegar al modelo. Forzar UTF-8 en los dos
 # streams elimina la clase entera de bug. errors="replace" garantiza que
 # nunca mas un print pueda tumbar una request.
 for _stream in (sys.stdout, sys.stderr):
@@ -185,7 +185,7 @@ def _ensure_session_workspace(session_path: Path) -> dict[str, Any]:
     try:
         # El modelo lead activo se consulta, no se hardcodea.
         meta["lead_model"] = (get_router().config.get("roles", {})
-                              .get("enlil_lead", {}).get("model"))
+                              .get("orchestrator_lead", {}).get("model"))
     except Exception:
         pass
     try:
@@ -279,7 +279,7 @@ async def system_health_summary():
 
 @app.post("/system/suggest")
 async def system_suggest():
-    """Fuerza una sugerencia proactiva inmediata (llamado desde ENLIL)."""
+    """Fuerza una sugerencia proactiva inmediata (llamado desde Orchestrator)."""
     from system.proactive_agent import ProactiveAgent
     agent = ProactiveAgent()
     result = agent.check()
@@ -378,12 +378,12 @@ async def startup() -> None:
         state = sb.read_state()
         roles = router.config.get("roles", {})
         role_to_key = {
-            "enlil_lead": "enlil_lead_model",
-            "enlil_council": "enlil_council_model",
-            "enlil_escalation": "enlil_escalation_model",
-            "enki_plan": "enki_plan_model",
-            "enki_apply": "enki_apply_model",
-            "shamash": "shamash_model",
+            "orchestrator_lead": "orchestrator_lead_model",
+            "orchestrator_council": "orchestrator_council_model",
+            "orchestrator_escalation": "orchestrator_escalation_model",
+            "planner_plan": "planner_plan_model",
+            "planner_apply": "planner_apply_model",
+            "curator": "curator_model",
         }
         for role, key in role_to_key.items():
             if role in roles:
@@ -421,7 +421,7 @@ class ChatMessage(BaseModel):
 class StateUpdateRequest(BaseModel):
     ultima_accion_real: str | None = None
     proyecto_activo: str | None = None
-    enlil_backend: str | None = None
+    orchestrator_backend: str | None = None
 
 
 class ApprovalRequest(BaseModel):
@@ -445,7 +445,7 @@ def health() -> dict[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# /agents — ENLIL entry point
+# /agents — Orchestrator entry point
 # ---------------------------------------------------------------------------
 
 
@@ -453,12 +453,12 @@ def health() -> dict[str, str]:
 async def agent_capabilities(name: str) -> dict[str, Any]:
     """Capacidades de un agente especifico."""
     caps = {
-        "ENLIL": {
+        "Orchestrator": {
             "description": "Orquestador central. Routing, clasificacion, auditoria, council.",
             "status": "operativo",
             "methods": ["route", "classify", "council_decide", "get_status"],
         },
-        "SHAMASH": {
+        "Curator": {
             "description": "Context Manager. Inyeccion de contexto, lecciones, resumen de archivos.",
             "status": "operativo",
             "methods": [
@@ -466,12 +466,12 @@ async def agent_capabilities(name: str) -> dict[str, Any]:
                 "summarize_file", "record_lesson", "record_quality", "estimate_repo_size",
             ],
         },
-        "ENKI": {
+        "Planner": {
             "description": "Programador. Plan -> Apply -> Verify.",
             "status": "rudimentario",
             "methods": ["plan_diff", "apply_diff", "shadow_verify"],
         },
-        "NISABA": {
+        "Retriever": {
             "description": "RAG + Filesystem + Impact Mapping.",
             "status": "rudimentario",
             "methods": ["search", "index_incremental", "get_file_tree", "get_impact_map"],
@@ -501,12 +501,12 @@ def _get_session_lock(session_dir: str) -> threading.Lock:
 async def agents_route(body: ChatMessage) -> StreamingResponse:
     """
     Entry point principal. Recibe mensaje del usuario y responde via SSE.
-    ENLIL clasifica y responde directo (simple) o genera y ejecuta Task Graph (complejo).
+    Orchestrator clasifica y responde directo (simple) o genera y ejecuta Task Graph (complejo).
     
     Si session_dir está presente (v1.4), usa el model_routing.yaml de esa sesión
     y adquiere un lock por sesión para evitar race conditions entre requests concurrentes.
     """
-    from agents.ENLIL.enlil import ENLIL
+    from agents.Orchestrator.orchestrator import Orchestrator
     
     # Session Isolation: lock + inyectar router de sesión si corresponde
     session_lock = _get_session_lock(body.session_dir) if body.session_dir else None
@@ -562,13 +562,13 @@ async def agents_route(body: ChatMessage) -> StreamingResponse:
                 "run_id": run_id,
                 "thread_id": thread_id,
                 "model": (get_router().config.get("roles", {})
-                          .get("enlil_lead", {}).get("model")),
+                          .get("orchestrator_lead", {}).get("model")),
                 "message_preview": (body.message or "")[:200],
             })
 
-            enlil = ENLIL()
+            orchestrator = Orchestrator()
             try:
-                async for chunk in enlil.route(
+                async for chunk in orchestrator.route(
                     message=body.message,
                     history=body.history,
                     task_id=body.task_id,
@@ -619,10 +619,10 @@ async def agents_route(body: ChatMessage) -> StreamingResponse:
 
 @app.get("/agents/status")
 async def agents_status() -> dict[str, Any]:
-    """Estado de ENLIL y circuit breakers de todos los providers."""
-    from agents.ENLIL.enlil import ENLIL
-    enlil = ENLIL()
-    return enlil.get_status()
+    """Estado de Orchestrator y circuit breakers de todos los providers."""
+    from agents.Orchestrator.orchestrator import Orchestrator
+    orchestrator = Orchestrator()
+    return orchestrator.get_status()
 
 
 @app.post("/agents/council")
@@ -631,9 +631,9 @@ async def agents_council(body: ChatMessage) -> dict[str, Any]:
     Council mode: dispara Lead + Council en paralelo.
     Retorna consenso o ambas respuestas si divergen.
     """
-    from agents.ENLIL.enlil import ENLIL
-    enlil = ENLIL()
-    return await enlil.council_decide(
+    from agents.Orchestrator.orchestrator import Orchestrator
+    orchestrator = Orchestrator()
+    return await orchestrator.council_decide(
         question=body.message,
         task_id=body.task_id,
     )
@@ -891,7 +891,7 @@ async def llm_providers() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# /embeddings — estado de la capa vectorial (SHAMASH + NISABA)
+# /embeddings — estado de la capa vectorial (Curator + Retriever)
 # ---------------------------------------------------------------------------
 
 @app.get("/embeddings/status")
@@ -905,7 +905,7 @@ def embeddings_status() -> dict[str, Any]:
     """
     from api.embed import CHROMA_DIR, collection_name, probe
 
-    from agents.SHAMASH.memory import nem0
+    from agents.Curator.memory import nem0
 
     status: dict[str, Any] = {"probe": probe(), "chroma_dir": str(CHROMA_DIR)}
 
@@ -915,12 +915,12 @@ def embeddings_status() -> dict[str, Any]:
         status["memory"] = {"error": str(e)[:200]}
 
     try:
-        from agents.NISABA.nisaba import COLLECTION_BASE as _NISABA_BASE
-        from agents.NISABA.nisaba import NISABA
+        from agents.Retriever.retriever import COLLECTION_BASE as _Retriever_BASE
+        from agents.Retriever.retriever import Retriever
 
-        col = NISABA().collection
+        col = Retriever().collection
         status["knowledge"] = {
-            "collection": collection_name(_NISABA_BASE),
+            "collection": collection_name(_Retriever_BASE),
             "docs": col.count(),
             "dims": nem0._dims(),
         }
@@ -938,7 +938,7 @@ def embeddings_rebuild(target: str = Query(default="memory")) -> dict[str, Any]:
     completo). Es seguro e idempotente: los vectores son datos derivados.
     """
     if target == "memory":
-        from agents.SHAMASH.memory import nem0
+        from agents.Curator.memory import nem0
 
         return nem0.rebuild_index()
     raise HTTPException(status_code=400, detail=f"target no soportado: {target}")
@@ -993,8 +993,8 @@ def patch_state(body: StateUpdateRequest) -> dict[str, Any]:
         state["ultima_accion_real"] = body.ultima_accion_real
     if body.proyecto_activo is not None:
         state["proyecto_activo"] = body.proyecto_activo
-    if body.enlil_backend is not None:
-        state["enlil_backend"] = body.enlil_backend
+    if body.orchestrator_backend is not None:
+        state["orchestrator_backend"] = body.orchestrator_backend
     sb.write_state(state)
     return state
 
@@ -1117,7 +1117,7 @@ def create_session() -> dict[str, Any]:
     session_dir_id = f"sess_{sid}_{uuid.uuid4().hex[:8]}"
     _clone_session(session_dir_id)
 
-    return {"id": sid, "session_dir": session_dir_id, "title": "Nueva conversación", "agent": "ENLIL"}
+    return {"id": sid, "session_dir": session_dir_id, "title": "Nueva conversación", "agent": "Orchestrator"}
 
 
 @app.patch("/sessions/{session_key}")
@@ -1333,10 +1333,10 @@ def _execute_approved_tool(row: dict[str, Any]) -> dict[str, Any]:
     tool = TOOL_ALIASES.get(tool, tool)
 
     try:
-        from agents.ENLIL.enlil import ENLIL
+        from agents.Orchestrator.orchestrator import Orchestrator
         import asyncio
 
-        engine = ENLIL()
+        engine = Orchestrator()
 
         async def _run() -> str:
             await engine._ensure_mcp()
@@ -1389,7 +1389,7 @@ def reload_gate() -> dict[str, Any]:
     """Recarga la política de permisos desde gate_rules.yaml.
 
     Antes recargaba solo las instancias de `files_api` y `shell_api`, mientras
-    `search_api`, `enki` y `nisaba` (y el agente) seguían con la política vieja
+    `search_api`, `planner` y `retriever` (y el agente) seguían con la política vieja
     en memoria: el endpoint respondía "reloaded" sin cambiar el comportamiento
     efectivo. Ahora hay una sola instancia (api/policy.py) y la recarga es real.
     """

@@ -1,6 +1,6 @@
 ---
 name: programming
-description: Ejecuta el pipeline Plan→Apply→Verify sobre código Python, C++/JUCE y SQL. Úsalo cuando ENKI necesite generar o modificar código.
+description: Ejecuta el pipeline Plan→Apply→Verify sobre código Python, C++/JUCE y SQL. Úsalo cuando Planner necesite generar o modificar código.
 ---
 
 # Programación — Plan → Apply → Verify
@@ -22,7 +22,7 @@ Genera un `DiffProposal` (Pydantic) con:
 **Reglas:**
 - Nunca generar texto libre — siempre `DiffProposal`
 - El `search_block` debe existir en el archivo (exact match o fuzzy)
-- Contexto mínimo: fragmento de SHAMASH con líneas circundantes
+- Contexto mínimo: fragmento de Curator con líneas circundantes
 
 ### 2. APPLY — `apply_diff()`
 Materializa el diff sobre el archivo real.
@@ -68,4 +68,4 @@ Sin LLM. Ejecuta en `workspace/`:
 
 ## Referencias
 - `VCORE_ARCHITECTURE_v0_4.md` — reglas de DiffProposal
-- `agents/ENKI/ENKI.md` — definición del agente
+- `agents/Planner/Planner.md` — definición del agente

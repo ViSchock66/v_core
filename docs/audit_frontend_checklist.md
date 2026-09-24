@@ -23,7 +23,7 @@
 - [ ] Cambiar entre conversaciones: historial persiste
 
 ## 🛠️ Tool Calls y Artefactos (Foco crítico)
-- [ ] Pedir a ENLIL que genere código (ej: "crea un archivo demo.py con X")
+- [ ] Pedir a Orchestrator que genere código (ej: "crea un archivo demo.py con X")
 - [ ] Verificar que el tool call se muestra en el chat (bloque structured, no texto crudo)
 - [ ] Verificar que el archivo aparece como artefacto en right panel
 - [ ] Right panel: toggle abre/cierra correctamente

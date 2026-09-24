@@ -4,9 +4,9 @@
 **Stack**: FastAPI + Vanilla JS + SQLite + NVIDIA NIM (multi-provider con circuit breaker, rate limiter, fallback chains y credential pool de 4 keys)
 **Backend entry**: `api/main.py` (uvicorn; el puerto canónico vive en `api/ports.py` — default 8000, override con `VCORE_PORT`. Rutas y routers son estado de código, no se cuentan aquí)
 **Frontend**: `web/` — Vite + TypeScript (build a `web_dist/`, ignorado). El v1 (Vanilla JS, temas Dark + Light Studio) vive archivado en `docs/_archive/frontend_v1/`. No documentar conteos de líneas: cambian con cada refactor.
-**Model routing**: `model_routing.yaml` — hot-swap en caliente. El lead activo es **estado mutable por hot-swap**: consultar `model_routing.yaml` → `enlil_lead.model` o `GET /system/model`. Council, escalation, ENKI y visual audit se consultan en el mismo YAML.
+**Model routing**: `model_routing.yaml` — hot-swap en caliente. El lead activo es **estado mutable por hot-swap**: consultar `model_routing.yaml` → `orchestrator_lead.model` o `GET /system/model`. Council, escalation, Planner y visual audit se consultan en el mismo YAML.
 **Embeddings**: `api/embed.py` unificado — 3-tier fallback (Ollama → NIM → hash SHA-256). Sin dependencia externa obligatoria.
-**SHAMASH**: capa de persistencia (SQLite + ChromaDB), **no es un agente con modelo LLM asignado**. No existe un rol `shamash` en `model_routing.yaml`.
+**Curator**: capa de persistencia (SQLite + ChromaDB), **no es un agente con modelo LLM asignado**. No existe un rol `curator` en `model_routing.yaml`.
 
 **Arquitectura**: `VCORE_ARCHITECTURE.md` · **Roadmap activo**: `VCORE_ROADMAP.md`
 **Versión**: `VCORE_STATE.json` → `api/version.py` (fuente única)
@@ -22,7 +22,7 @@ Toda la arquitectura, pitfalls, comandos y patrones de bugs están ahí.
 1. **Lee antes de editar** — siempre inspecciona el archivo antes de cualquier cambio.
 2. **No digas "funciona" sin evidencia** — verifica con curl, grep, node --check o Playwright.
 3. **Honestidad brutal** — si algo falla o no sabes, dilo. No adornes resultados.
-4. **No hagas el trabajo de ENLIL** — solo arregla infraestructura (timeouts, paths, prompts, permisos). ENLIL aplica los fixes.
+4. **No hagas el trabajo de Orchestrator** — solo arregla infraestructura (timeouts, paths, prompts, permisos). Orchestrator aplica los fixes.
 5. **Confirmación por bloques** — presenta 3-4 tareas, espera "vamos", ejecuta, repite.
 6. **No modifiques `.md` files** sin pedido explícito del PM.
 7. **No hagas git push** sin orden explícita.

@@ -73,7 +73,7 @@ def execute_shell(body: ShellExecuteRequest) -> ShellExecuteResponse:
     3. Crear approval
     4. Retornar approval_id (sin ejecutar aún)
     
-    Cuando usuario aprueba en frontend → ENLIL ejecuta realmente.
+    Cuando usuario aprueba en frontend → Orchestrator ejecuta realmente.
     """
     try:
         # Validar cwd si se proporciona
@@ -96,7 +96,7 @@ def execute_shell(body: ShellExecuteRequest) -> ShellExecuteResponse:
         if not decision.auto_approved:
             # Crear approval
             approval_id = sb.create_approval(
-                agent_id="ENLIL",
+                agent_id="Orchestrator",
                 tool="execute_shell",
                 params={
                     "command": body.command,

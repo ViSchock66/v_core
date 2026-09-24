@@ -160,7 +160,7 @@ cumple — y como el `glob` funciona hoy por coincidencia (los directorios
 
 | Síntoma | Evidencia | Naturaleza |
 |---|---|---|
-| Rol de recuperación apunta a proveedor muerto | `/system/model` → `nisaba: ollama/nomic-embed-text`, pero `/embeddings/status` dice Ollama `"ok":false` | Backend (config) |
+| Rol de recuperación apunta a proveedor muerto | `/system/model` → `retriever: ollama/nomic-embed-text`, pero `/embeddings/status` dice Ollama `"ok":false` | Backend (config) |
 | Rutas del contrato nuevo ausentes | `/threads` (listado) → **404**; `/policy/stats` → **404**. Solo existen `/threads/{key}/events` y `/summary` | Backend (contrato incompleto) |
 | Dos frontends vivos | `main.py:1714` monta `web_dist/` y si no `Frontend/`. El viejo **nunca se destruyó** pese a ser el objetivo declarado | Backend (fallback) |
 | Sidebar sin señal | 49 items `Sesión NNN`, ninguno legible; bolitas de estado grises aunque la sesión tenga 64 eventos | Frontend + backend |
@@ -198,7 +198,7 @@ produce este vacío.
 5. `system/mcp_manager.py` + los 8 tools `*_mcp.py`.
 6. `system/task_graph_engine.py` — DAG con persistencia y resume.
 7. `system/observability.py` + `traces.jsonl`.
-8. `agents/SHAMASH/memory.py` + `agents/NISABA/nisaba.py` (con el fix de dims).
+8. `agents/Curator/memory.py` + `agents/Retriever/retriever.py` (con el fix de dims).
 9. `api/version.py` + `VCORE_STATE.json` — fuente única de versión.
 10. `web/src/lib/reduce.ts` + `protocol.ts` + `api.ts` — **el reducer único
     compartido entre vivo y replay es una buena decisión y se conserva.**
@@ -280,15 +280,15 @@ Tres representaciones duplicadas de la misma verdad. Detalle y fuentes en
 
 - **Un solo catálogo de tools**, derivado de `gate_rules.yaml` (canónico: **22
   tools**) y de `MCPManager.get_tools_catalog()` (dinámico). Se elimina
-  `_TOOL_DEFS` hardcodeado (`enlil.py:502-512`), que expone **8** y es el que se
+  `_TOOL_DEFS` hardcodeado (`orchestrator.py:502-512`), que expone **8** y es el que se
   usa. Hoy `_OPENAI_TOOLS` se calcula y **no se consume**.
 - **El catálogo deja de duplicarse como texto** en el system prompt
-  (`enlil.py:529-537`).
+  (`orchestrator.py:529-537`).
 - **Prompt operacional a archivo versionado**, separado de la persona. Hoy
   `_IDENTITY_LOCK` + operacional = **~5.224 tokens** fijos por iteración, en
   español y con rutas muertas (`Frontend/app.js`, `:539-542`). Objetivo: ~1.500
   tokens sin perder reglas operativas.
-- **Eliminar `_execute_tool_legacy`** (~300 líneas, `enlil.py:1133`).
+- **Eliminar `_execute_tool_legacy`** (~300 líneas, `orchestrator.py:1133`).
 - **Techo de iteraciones sensato**: `max_iterations=999` → derivado del
   presupuesto real.
 - **Aceptación:** `_TOOL_DEFS` con 0 ocurrencias; el catálogo expuesto al modelo
@@ -299,12 +299,12 @@ Tres representaciones duplicadas de la misma verdad. Detalle y fuentes en
 ### F1.6 — Compactación de contexto *(la fuga más grande)*
 
 Hoy no existe (`compact` → 0 ocurrencias) y el historial se corta duro con
-`history[-10:]` (`enlil.py:572,1276`). Diseño tomado de Claude Code (3 niveles) y
+`history[-10:]` (`orchestrator.py:572,1276`). Diseño tomado de Claude Code (3 niveles) y
 Pi (lossless), adaptado a nuestro event log.
 
 - **Nivel 1 — vaciar resultados de tools viejos** (equivalente a MicroCompact):
   conservar los **N más recientes** completos, vaciar los anteriores. **Es la
-  corrección directa del `result[:800]`** (`enlil.py:752,837,899,959`): hoy el
+  corrección directa del `result[:800]`** (`orchestrator.py:752,837,899,959`): hoy el
   modelo nunca ve un archivo entero. Claude Code hace lo contrario a nosotros:
   conserva completo y vacía solo lo viejo.
 - **Nivel 2 — resumen del historial** con umbral derivado de la **ventana
@@ -396,7 +396,7 @@ raíz**.
    - `list_files(".")` → `ask` por `path.outside_agent_allowlist`. **Listar la
      raíz del proyecto no puede pedir permiso.** Las tools `read_only` no deben
      pasar por la allowlist de agente, o la raíz debe estar en ella.
-   - **`web/` no está en la allowlist de ENKI.** El agente coder **no puede
+   - **`web/` no está en la allowlist de Planner.** El agente coder **no puede
      escribir el frontend nuevo**. Tampoco están `docs/` ni `tests/`. Hay que
      revisar la allowlist completa contra la estructura real del repo (y sacar
      `Frontend/`, que se archiva).
@@ -407,7 +407,7 @@ raíz**.
   mostrar **0 `ask` en lectura y navegación**, y `ask` solo en lo que
   legítimamente lo merece (`git reset --hard`, `pip install`, `curl`, `python -c`).
 - **`list_files(".")` → `permit`**, verificado por script.
-- **ENKI puede escribir en `web/`**, verificado por script.
+- **Planner puede escribir en `web/`**, verificado por script.
 - **Escalada con justificación:** un run que pida algo fuera de allowlist muestra
   en la UI la justificación redactada por el agente, y las tres opciones de
   concesión.
@@ -439,9 +439,9 @@ agente puede hacer = cambiar qué filas se componen. Nada más.
   que más valor devuelve: compone el subárbol de verdad y rechaza (a) paquete que
   no resuelve, (b) config inválida, (c) **fila que nunca se activa porque nadie
   provee lo que inyecta**, (d) servicio publicado en el realm raíz.
-  - **Habría cazado `visual_audit`**: anunciada en `_TOOL_DEFS` (`enlil.py:506`) y
+  - **Habría cazado `visual_audit`**: anunciada en `_TOOL_DEFS` (`orchestrator.py:506`) y
     en el prompt (`:530`), y **no registrada en MCP**. Es exactamente el fallo (c).
-  - También habría cazado el `nisaba → ollama/nomic-embed-text` apuntando a un
+  - También habría cazado el `retriever → ollama/nomic-embed-text` apuntando a un
     proveedor caído.
 - **Perfiles** `minimal` / `code` / `full` como archivos de composición. La postura
   de F1.8 es una fila más.
@@ -458,8 +458,8 @@ agente puede hacer = cambiar qué filas se componen. Nada más.
 Rediseño real. Rompe con los tokens heredados.
 
 - **Romper la herencia:** tokens nuevos, no la paleta clonada. Lenguaje visual
-  cósmico/sumerio **propio** (el proyecto ya tiene nombres: ENLIL, ENKI, NISABA,
-  SHAMASH; eso es identidad, y hoy no se ve en pantalla).
+  cósmico/sumerio **propio** (el proyecto ya tiene nombres: Orchestrator, Planner, Retriever,
+  Curator; eso es identidad, y hoy no se ve en pantalla).
 - **Cambiar el layout:** el chat es la superficie dominante. Los paneles de
   sistema/artefactos/workspace pasan a **drawers superpuestos**, no a una tercera
   columna fija que resta 380 px aunque esté vacía.
@@ -571,7 +571,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ cerrado con evidencia.
    `WinError 5` al crear sus named pipes. **Solución conocida:** ejecutarlo con
    `sandbox_permissions: danger-full-access` (ya validado hoy; es la única
    operación del proyecto que lo requiere).
-5. **`nisaba` apunta a Ollama caído.** `/system/model` → `ollama/nomic-embed-text`
+5. **`retriever` apunta a Ollama caído.** `/system/model` → `ollama/nomic-embed-text`
    mientras Ollama reporta `ok:false`. El retrieval funciona por el tier NIM,
    pero la config miente.
 6. **Backend viejo corriendo.** El proceso actual sirve `2.0.0` y monta
@@ -596,7 +596,7 @@ Leyenda: ⬜ pendiente · 🟡 en curso · ✅ cerrado con evidencia.
    bloqueo, reintentar la operación exacta pidiendo la escalada.
 10. **El gate interrumpe de más y explica de menos.** Medido: **24,1%** de las
     operaciones típicas piden aprobación, incluida `list_files(".")` — listar la
-    raíz del proyecto. La causa está en que la allowlist de agente de ENKI lista
+    raíz del proyecto. La causa está en que la allowlist de agente de Planner lista
     subdirectorios pero no la raíz, y `web/` no está en absoluto (el agente coder
     no puede escribir el frontend nuevo). **Corolario de diseño:** un gate que
     interrumpe sin explicar entrena al humano a aprobar sin leer, lo cual es peor

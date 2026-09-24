@@ -1,6 +1,6 @@
 """Prueba end-to-end del HITL sincrónico a través del backend real.
 
-Envía un mensaje que hace que ENLIL intente un comando no listado, escucha el
+Envía un mensaje que hace que Orchestrator intente un comando no listado, escucha el
 evento `approval.requested` en el stream SSE, lo resuelve vía
 `POST /approvals/pending/{id}/resolve` y verifica que el stream se reanuda y la
 tool se ejecuta.

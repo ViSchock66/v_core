@@ -27,10 +27,10 @@ aplica a servicios tradicionales, pero para modelos.
 ```
 Frontend (Vite + TypeScript)
   → FastAPI (api/main.py)
-     → ENLIL: orquestación, routing y streaming SSE
-     → ENKI: planificación y aplicación de cambios de código
-     → SHAMASH: contexto y memoria persistente (SQLite + ChromaDB)
-     → NISABA: indexación, filesystem e impact mapping
+     → Orchestrator: orquestación, routing y streaming SSE
+     → Planner: planificación y aplicación de cambios de código
+     → Curator: contexto y memoria persistente (SQLite + ChromaDB)
+     → Retriever: indexación, filesystem e impact mapping
      → LLMRouter: providers, fallback, rate limiting, circuit breaker
      → Security Gate: clasificación de riesgo + approval flow
      → MCPManager: catálogo y ejecución de herramientas
@@ -47,8 +47,8 @@ Detalles de cada capa: [`VCORE_ARCHITECTURE.md`](VCORE_ARCHITECTURE.md).
 - **Circuit breaker con política por código HTTP.** 429 se trata como
   transitorio (no cuenta contra el breaker), 500/502/503/504 como persistente,
   401/403 como fatal. Política derivada de pruebas reales en NIM.
-- **Routing por roles.** El modelo que planifica (ENKI) no es el que
-  orquesta la conversación (ENLIL) ni el que toma decisiones de escalación
+- **Routing por roles.** El modelo que planifica (Planner) no es el que
+  orquesta la conversación (Orchestrator) ni el que toma decisiones de escalación
   (escalation tier). Hot-swap en caliente vía `model_routing.yaml`,
   sin reiniciar el server.
 - **Model presets con quirks por modelo.** Cada modelo en
@@ -179,10 +179,10 @@ V-Core/
 │   ├── embed.py        Embeddings unificado (Ollama → NIM → SHA-256)
 │   └── version.py      Fuente única de versión
 ├── agents/             Identidad de los 4 agentes
-│   ├── ENLIL/          Orquestación + streaming + tool loop
-│   ├── ENKI/           Planificación + aplicación de cambios
-│   ├── SHAMASH/        Persistencia (SQLite + ChromaDB) + memoria
-│   └── NISABA/         Búsqueda, indexación, impact mapping
+│   ├── Orchestrator/          Orquestación + streaming + tool loop
+│   ├── Planner/           Planificación + aplicación de cambios
+│   ├── Curator/        Persistencia (SQLite + ChromaDB) + memoria
+│   └── Retriever/         Búsqueda, indexación, impact mapping
 ├── web/                UI (Vite + TypeScript; build → web_dist/, ignorado)
 ├── system/             MCP manager, observabilidad, proactive agent
 ├── gate.py             Security gate (zona protegida)

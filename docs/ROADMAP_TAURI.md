@@ -48,7 +48,7 @@
 - [ ] Implementar `ActivityBar` con iconos SVG inline (Chat, Files, Git, Search)
 - [ ] Implementar botones inferiores (Approval, Usage, Observability, Theme)
 - [ ] Tooltips custom con `act-tooltip`
-- [ ] `SidebarShell` con header "V—CORE 1.1 / ENLIL · agente activo"
+- [ ] `SidebarShell` con header "V—CORE 1.1 / Orchestrator · agente activo"
 - [ ] `ConvList` — cargar sesiones desde `GET /sessions`
 - [ ] `NewConvButton` — `POST /sessions` + navegar a nueva sesión
 - [ ] `FileTree` — `GET /files/tree` → render recursivo con iconos por extensión
@@ -63,7 +63,7 @@
 - [ ] `ChatArea` con `MessageScroller` (shadcn/ui pattern)
 - [ ] `EmptyState` — mensajes rotativos desde el array existente
 - [ ] `UserMessage` — avatar "VC", timestamp, contenido
-- [ ] `AgentMessage` — avatar por agente (ENLIL/ENKI/SHAMASH), badge de modelo
+- [ ] `AgentMessage` — avatar por agente (Orchestrator/Planner/Curator), badge de modelo
 - [ ] Markdown rendering con `marked.js` + highlight.js (igual que ahora)
 - [ ] `ReasoningBlock` — colapsable, texto monoespaciado
 - [ ] `ToolCallBlock` — muestra tool call + resultado colapsable

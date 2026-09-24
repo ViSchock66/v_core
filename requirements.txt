@@ -26,7 +26,7 @@ sse-starlette>=2.1
 
 # --- Persistencia y recuperación semántica --------------------------------
 # ChromaDB es TECNICAMENTE opcional: api/embed.py tiene fallback de 3 niveles
-# (Ollama -> NIM -> hash SHA-256) y SHAMASH degrada a SQLite si falta. Pero
+# (Ollama -> NIM -> hash SHA-256) y Curator degrada a SQLite si falta. Pero
 # sin él se pierde la búsqueda semántica, así que va como dependencia real.
 chromadb>=1.0,<2.0
 

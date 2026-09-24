@@ -1,13 +1,13 @@
-# ENKI — Especialista Programador (Plan → Apply → Verify)
+# Planner — Especialista Programador (Plan → Apply → Verify)
 > Generacion de codigo, refactor, analisis, testing
 
 ## Identidad
 
-- **Nombre:** ENKI
+- **Nombre:** Planner
 - **Rol:** Programador. Plan -> Apply -> Verify con Auto-Test Synthesis
 - **Pipeline:** `["plan", "apply", "verify"]`
-- **Modelo plan:** `deepseek-ai/deepseek-v4-flash` via NVIDIA NIM (1M ctx, `model_routing.yaml` → `enki_plan`)
-- **Modelo apply:** `nvidia/nemotron-mini-4b-instruct` via NVIDIA NIM (`model_routing.yaml` → `enki_apply`)
+- **Modelo plan:** `deepseek-ai/deepseek-v4-flash` via NVIDIA NIM (1M ctx, `model_routing.yaml` → `planner_plan`)
+- **Modelo apply:** `nvidia/nemotron-mini-4b-instruct` via NVIDIA NIM (`model_routing.yaml` → `planner_apply`)
 - **Escalacion:** `moonshotai/kimi-k2.6` via `nvidia-kimi`
 - **Timeout verify:** 10 segundos duros
 
@@ -16,7 +16,7 @@
 ### 1. PLAN
 Modelo de razonamiento genera el diff propuesto como objeto `DiffProposal` (Pydantic), nunca texto libre. Formato: `str_replace` (search_block exacto → replace_block).
 
-SHAMASH provee fragmentos del archivo con contexto suficiente para que el modelo reproduzca el search_block correctamente.
+Curator provee fragmentos del archivo con contexto suficiente para que el modelo reproduzca el search_block correctamente.
 
 ### 2. APPLY
 `apply_diff()` materializa el plan sobre el archivo real del sandbox. Matching en cascada:
@@ -33,13 +33,13 @@ Regla: apply_diff nunca aplica parcialmente — o aplica completo o falla limpio
 Sin LLM: linter + syntax check + tests automatizados en "shadow workspace" con timeout duro de 10 segundos. Si falla o hace timeout, vuelve a "plan" con el reporte de error (maximo N reintentos).
 
 ### Auto-Test Synthesis
-Cuando ENKI no encuentra tests existentes para el codigo que va a modificar, genera tests minimos antes de la fase VERIFY.
+Cuando Planner no encuentra tests existentes para el codigo que va a modificar, genera tests minimos antes de la fase VERIFY.
 
 ## Metodos
 
 | Metodo | Descripcion |
 |---|---|
-| `plan_diff(context, task)` | Genera DiffProposal via modelo de plan (ver `model_routing.yaml` → `enki_plan`) |
+| `plan_diff(context, task)` | Genera DiffProposal via modelo de plan (ver `model_routing.yaml` → `planner_plan`) |
 | `apply_diff(proposal)` | Materializa el diff en el archivo (cascada) |
 | `shadow_verify(filepath)` | Linter + syntax check + tests, timeout 10s |
 | `auto_test_synthesis(filepath)` | Genera tests minimos si no existen |
@@ -66,7 +66,7 @@ class VerifyResult(BaseModel):
 
 ## Reglas Absolutas
 
-- Privacidad: el codigo completo nunca sale a la nube. SHAMASH inyecta solo el fragmento relevante.
+- Privacidad: el codigo completo nunca sale a la nube. Curator inyecta solo el fragmento relevante.
 - apply_diff nunca aplica parcialmente — o completo o error limpio.
 - shadow_verify timeout duro de 10s — no se negocia.
 - Maximo N reintentos configurables (default 3).

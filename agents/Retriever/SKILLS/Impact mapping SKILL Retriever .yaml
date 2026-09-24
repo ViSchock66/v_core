@@ -1,6 +1,6 @@
 ---
 name: impact-map
-description: Construye un grafo de dependencias efímero para responder "si cambio X, ¿qué se rompe?". Se adjunta al contexto de SHAMASH antes de PLAN.
+description: Construye un grafo de dependencias efímero para responder "si cambio X, ¿qué se rompe?". Se adjunta al contexto de Curator antes de PLAN.
 ---
 
 # Impact Mapping Efímero
@@ -15,7 +15,7 @@ description: Construye un grafo de dependencias efímero para responder "si camb
 ### 2. Análisis — `get_impact_map()`
 - "Si cambio X, ¿qué archivos se ven afectados?"
 - Resultado: lista de archivos + archivos que dependen de ellos
-- Adjuntar al contexto que SHAMASH entrega a ENKI
+- Adjuntar al contexto que Curator entrega a Planner
 
 ### 3. Heurísticas de dependencia
 
@@ -38,7 +38,7 @@ description: Construye un grafo de dependencias efímero para responder "si camb
 
 ## Reglas absolutas
 - Impact Map es **efímero** — no se persiste en el tiempo
-- Se genera por tarea, se adjunta al contexto de SHAMASH
+- Se genera por tarea, se adjunta al contexto de Curator
 - No debe exceder 500 tokens en el contexto
 
 ## Ejemplo de output

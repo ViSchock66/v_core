@@ -1,7 +1,7 @@
 """
 api/embed.py
 ============
-Capa unificada de embeddings para SHAMASH y NISABA.
+Capa unificada de embeddings para Curator y Retriever.
 
 La versión NO se escribe acá: la fuente única es VCORE_STATE.json leída por
 api/version.py (ver docs/DOCUMENTATION.md). Un número hardcodeado en un
@@ -18,15 +18,15 @@ Historial de bugs corregidos (2026-09-23):
   - `_embed_fallback` declaraba 768 dimensiones pero devolvía 32 (un SHA-256
     son 32 bytes y nunca se expandía). Consecuencia real y verificada: la
     colección `nem0_memory` quedó con vectores de 32 dims mientras
-    `shamash_memory` tenía 768 — la memoria partida en dos espacios vectoriales
+    `curator_memory` tenía 768 — la memoria partida en dos espacios vectoriales
     incompatibles, con búsquedas semánticas silenciosamente degradadas.
   - El tier 2 no leía las 4 keys del credential pool de `llm_client.py`.
 
 Uso:
     from api.embed import embed, embed_async, embed_with_source
 
-    vec = embed("texto a embeber")               # sync  (SHAMASH)
-    vec = await embed_async("texto a embeber")   # async (NISABA)
+    vec = embed("texto a embeber")               # sync  (Curator)
+    vec = await embed_async("texto a embeber")   # async (Retriever)
     vec, src = embed_with_source("texto")        # + procedencia
 
 IMPORTANTE: dos vectores de tiers distintos NO son comparables. Nunca mezclar
@@ -302,10 +302,10 @@ def probe() -> dict:
 
 # ── Infraestructura vectorial compartida ──────────────────────────
 #
-# Vive acá (y no en cada agente) porque SHAMASH y NISABA escriben en el mismo
+# Vive acá (y no en cada agente) porque Curator y Retriever escriben en el mismo
 # almacén Chroma y deben coincidir en ruta, nombre de colección y espacio
-# vectorial. Antes cada uno definía los suyos: SHAMASH usaba `chroma_db/` y
-# NISABA `knowledge/.chromadb/` — un directorio que no existía, así que
+# vectorial. Antes cada uno definía los suyos: Curator usaba `chroma_db/` y
+# Retriever `knowledge/.chromadb/` — un directorio que no existía, así que
 # ChromaDB lo creaba vacío en silencio y el RAG quedaba desconectado de todos
 # los embeddings ya calculados.
 
@@ -334,7 +334,7 @@ def collection_name(base: str) -> str:
 
     Las dimensiones son parte de la identidad de la colección: incluir el
     ancho en el nombre hace imposible volver a mezclar espacios vectoriales,
-    que fue el bug de origen (`nem0_memory` con 32 dims y `shamash_memory`
+    que fue el bug de origen (`nem0_memory` con 32 dims y `curator_memory`
     con 768, ambas vivas a la vez).
     """
     dims = embedding_dims()

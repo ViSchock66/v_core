@@ -1,7 +1,7 @@
 """
-agents/ENKI/enki.py
+agents/Planner/planner.py
 ====================
-ENKI — Especialista Programador (Plan → Apply → Verify) — V-CORE v1.5
+Planner — Especialista Programador (Plan → Apply → Verify) — V-CORE v1.5
 
 Pipeline de 3 fases:
   1. PLAN  — deepseek-ai/deepseek-v4-flash genera DiffProposal (str_replace format)
@@ -11,14 +11,14 @@ Pipeline de 3 fases:
 Auto-Test Synthesis: si no existen tests, genera tests minimos antes de VERIFY.
 
 Privacidad: el codigo completo nunca sale a la nube.
-SHAMASH inyecta solo el fragmento relevante; ENKI envia el fragmento al modelo de plan.
+Curator inyecta solo el fragmento relevante; Planner envia el fragmento al modelo de plan.
 
 Uso:
-    from agents.ENKI.enki import ENKI
-    enki = ENKI()
-    proposal = await enki.plan_diff(context, task)
-    result = enki.apply_diff(proposal)
-    verified = enki.shadow_verify(proposal.file)
+    from agents.Planner.planner import Planner
+    planner = Planner()
+    proposal = await planner.plan_diff(context, task)
+    result = planner.apply_diff(proposal)
+    verified = planner.shadow_verify(proposal.file)
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from system.observability import get_tracer
 # =============================================================================
 
 class DiffProposal(BaseModel):
-    """Output de ENKI.plan_diff(). Schema gate: se valida antes de apply()."""
+    """Output de Planner.plan_diff(). Schema gate: se valida antes de apply()."""
     file: str                           # path relativo al workspace
     search_block: str                   # fragmento exacto a reemplazar (str_replace format)
     replace_block: str                  # contenido nuevo
@@ -53,7 +53,7 @@ class DiffProposal(BaseModel):
 
 
 class VerifyResult(BaseModel):
-    """Output de ENKI.shadow_verify(). Sin LLM — solo linter + tests."""
+    """Output de Planner.shadow_verify(). Sin LLM — solo linter + tests."""
     passed: bool
     stdout: str
     stderr: str
@@ -93,17 +93,17 @@ FUZZY_THRESHOLD = 0.80   # threshold de similitud para fuzzy whitespace match (0
 
 
 # =============================================================================
-# ENKI
+# Planner
 # =============================================================================
 
-class ENKI:
+class Planner:
     """
     Especialista Programador.
     Pipeline: plan_diff() -> apply_diff() -> shadow_verify()
     """
 
     def __init__(self):
-        self.agent_name = "ENKI"
+        self.agent_name = "Planner"
         self._router = None
         self._tracer = get_tracer()
 
@@ -124,8 +124,8 @@ class ENKI:
         task: str,
     ) -> DiffProposal:
         """
-        Genera un DiffProposal via el modelo de plan (enki_plan).
-        El contexto proviene de SHAMASH (solo fragmentos relevantes, no el archivo completo).
+        Genera un DiffProposal via el modelo de plan (planner_plan).
+        El contexto proviene de Curator (solo fragmentos relevantes, no el archivo completo).
 
         Args:
             context: Contexto del archivo a modificar (fragmentos + lineas)
@@ -134,7 +134,7 @@ class ENKI:
         Returns:
             DiffProposal validado
         """
-        system_prompt = """Eres ENKI, el especialista programador de V-CORE.
+        system_prompt = """Eres Planner, el especialista programador de V-CORE.
 Generas propuestas de modificacion de codigo en formato str_replace.
 
 Debes responder SOLO con un JSON valido, sin texto adicional, sin markdown.
@@ -166,7 +166,7 @@ Tarea a realizar:
 
         # Usar temperatura baja para ser mas determinista
         response = await self.router.complete(
-            role="enki_plan",
+            role="planner_plan",
             messages=[{"role": "user", "content": user_prompt}],
             system=system_prompt,
             agent_name=self.agent_name,
@@ -185,7 +185,7 @@ Tarea a realizar:
         match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not match:
             raise ValueError(
-                f"ENKI.plan_diff: No se encontro JSON en respuesta. "
+                f"Planner.plan_diff: No se encontro JSON en respuesta. "
                 f"Raw: {raw[:200]}"
             )
 
@@ -193,7 +193,7 @@ Tarea a realizar:
             data = json.loads(match.group(0))
         except json.JSONDecodeError as e:
             raise ValueError(
-                f"ENKI.plan_diff: JSON invalido — {e}. Raw: {raw[:200]}"
+                f"Planner.plan_diff: JSON invalido — {e}. Raw: {raw[:200]}"
             )
 
         # Validar campos requeridos
@@ -201,7 +201,7 @@ Tarea a realizar:
         for field in required:
             if field not in data:
                 raise ValueError(
-                    f"ENKI.plan_diff: Campo '{field}' faltante en respuesta"
+                    f"Planner.plan_diff: Campo '{field}' faltante en respuesta"
                 )
 
         # Validar estimated_risk
@@ -231,7 +231,7 @@ Tarea a realizar:
         from gate import Gate
         gate = Gate("gate_rules.yaml")
         filepath = self._resolve_path(proposal.file)
-        decision = gate.evaluate("write_file", {"path": str(filepath)}, agent_id="ENKI")
+        decision = gate.evaluate("write_file", {"path": str(filepath)}, agent_id="Planner")
         if not decision.auto_approved:
             raise PermissionError(f"Gate bloqueó escritura: {decision.reason}")
         # --- fin Gap 3 ---
@@ -239,7 +239,7 @@ Tarea a realizar:
         # Safety: no escribir sobre directorios
         if filepath.is_dir():
             raise ValueError(
-                f"ENKI.apply_diff: '{proposal.file}' es un directorio, no un archivo. "
+                f"Planner.apply_diff: '{proposal.file}' es un directorio, no un archivo. "
                 f"El DiffProposal debe apuntar a un archivo concreto."
             )
 
@@ -571,7 +571,7 @@ Tarea a realizar:
             return str(test_path)
 
         except Exception as e:
-            print(f"[ENKI] auto_test_synthesis fallo: {e}")
+            print(f"[Planner] auto_test_synthesis fallo: {e}")
             return None
 
     # ------------------------------------------------------------------
@@ -783,7 +783,7 @@ Tarea a realizar:
     async def _generate_test(self, prompt: str) -> str:
         """Genera tests usando el modelo local (privado, $0)."""
         response = await self.router.complete(
-            role="enki_apply",  # modelo local
+            role="planner_apply",  # modelo local
             messages=[{"role": "user", "content": prompt}],
             system="Genera SOLO codigo de tests, sin explicaciones. Usa pytest.",
             agent_name=self.agent_name,
@@ -812,7 +812,7 @@ Tarea a realizar:
         Con reintentos automaticos si verify falla.
 
         Args:
-            context: Contexto del archivo (de SHAMASH)
+            context: Contexto del archivo (de Curator)
             task: Descripcion de la tarea
             retries: Maximo de reintentos (default 3)
 

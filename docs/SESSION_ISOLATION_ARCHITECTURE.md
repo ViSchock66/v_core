@@ -172,7 +172,7 @@ async def agents_route(body: ChatMessage):
             saved = get_router()            # preservar singleton
             set_router(LLMRouter(sessions/<id>/model_routing.yaml))
             try:
-                ...  # ENLIL.route()
+                ...  # Orchestrator.route()
             finally:
                 set_router(saved)           # restaurar
         finally:

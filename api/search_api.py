@@ -44,7 +44,7 @@ def search_workspace(
 
     El default era workspace/, que solo contiene los adjuntos subidos, así que
     la búsqueda del IDE devolvía 0 resultados para cualquier término de código
-    (verificado con 'renderTree', 'def ', 'import', 'ENLIL').
+    (verificado con 'renderTree', 'def ', 'import', 'Orchestrator').
     """
     try:
         search_root = WORKSPACE_DIR if root == "workspace" else BASE_DIR

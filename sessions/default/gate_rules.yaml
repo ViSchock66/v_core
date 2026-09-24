@@ -69,17 +69,17 @@ path_params:
 agent_path_allowlist:
   API:
     - "${VCORE_ROOT}"
-  ENKI:
+  Planner:
     - "${VCORE_ROOT}\\workspace"
     - "${VCORE_ROOT}\\agents"
     - "${VCORE_ROOT}\\Frontend"
     - "${VCORE_ROOT}\\scripts"
     - "${VCORE_ROOT}\\api"
     - "${VCORE_ROOT}\\system"
-  NISABA:
+  Retriever:
     - "${VCORE_ROOT}"
     - "${VCORE_ROOT}\\knowledge"
-  SHAMASH:
+  Curator:
     - "${VCORE_ROOT}"
-  ENLIL:
+  Orchestrator:
     - "${VCORE_ROOT}"

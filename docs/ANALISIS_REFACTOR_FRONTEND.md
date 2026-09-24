@@ -14,7 +14,7 @@ Evidencia recolectada hoy, con el backend en `:8000` (v1.5.0) y Chromium real:
 | `scripts/audit_live.py` (nuevo) | errores de consola, errores HTTP, estado inicial, dropdown, file tree, visor |
 | `scripts/e2e_chat_probe.py` (nuevo) | chat real por SSE: tools, artifacts, persistencia post-reload |
 | `.audit_shots/*.png` | capturas del estado actual |
-| lectura de código | ENLIL, ENKI, NISABA, SHAMASH, gate, llm_client, task_graph, MCP |
+| lectura de código | Orchestrator, Planner, Retriever, Curator, gate, llm_client, task_graph, MCP |
 | `sqlite3` sobre `vcore.db` | esquema y volumen real de datos |
 | subagentes de auditoría | inventario agentivo + estado del arte (ver §7) |
 
@@ -27,7 +27,7 @@ crítico. No es un wrapper de OpenAI: hay orquestación, tools, resiliencia y pe
 
 **Funciona (evidencia propia):**
 
-- **Chat por SSE con tool loop ReAct.** Mandé 3 mensajes reales. ENLIL emitió eventos
+- **Chat por SSE con tool loop ReAct.** Mandé 3 mensajes reales. Orchestrator emitió eventos
   `tool` y `artifact` correctamente; el archivo `workspace/prueba_artefacto.txt` se creó
   (~`write_file` confirmado: "Archivo escrito: workspace\prueba_artefacto.txt (9 chars)").
 - **8 tools MCP reales**: `read_file`, `write_file`, `patch_file`, `list_files`,
@@ -43,9 +43,9 @@ crítico. No es un wrapper de OpenAI: hay orquestación, tools, resiliencia y pe
 - **Task Graph engine** con DAG, persistencia SQLite (**87 grafos** en `task_graphs`),
   resume y recovery al arranque.
 - **Observabilidad** en `traces.jsonl` correlacionada por `task_id`, consumible por HTTP.
-- **Memoria**: existe. `agents/SHAMASH/memory.py` (SQLite `nem0_memory` + ChromaDB,
-  dedup por SHA-256) **y** `agents/SHAMASH/shamash.py` (lecciones). 23 filas en
-  `nem0_memory`. Está cableada en el agent loop (`enlil.py:436,667,744`).
+- **Memoria**: existe. `agents/Curator/memory.py` (SQLite `nem0_memory` + ChromaDB,
+  dedup por SHA-256) **y** `agents/Curator/curator.py` (lecciones). 23 filas en
+  `nem0_memory`. Está cableada en el agent loop (`orchestrator.py:436,667,744`).
 
 **Datos reales acumulados** (`vcore.db`, 14 tablas): `agent_execution` 430,
 `gate_log` 1685, `llm_usage_log` 978, `chat_history` 130, `task_graphs` 87,
@@ -99,8 +99,8 @@ recuperable como *referencia*, no como base. Lo que rompe:
 - El dropdown **sí carga** (6 filas, modelo activo marcado con `--accent`), verificado
   con click real.
 - Pero arranca con `available?provider=nvidia` hardcodeado (`app.js:479`) y pide cambiar
-  **siempre `role: "enlil_lead"`** (`app.js:490`): no permite cambiar council, escalation
-  ni ENKI, que son roles con modelo propio en `model_routing.yaml`.
+  **siempre `role: "orchestrator_lead"`** (`app.js:490`): no permite cambiar council, escalation
+  ni Planner, que son roles con modelo propio en `model_routing.yaml`.
 - El rol activo no se muestra: el topbar muestra `z-ai/glm-5.2` sin decir *de qué rol*.
 - `renderModelDropdown` usa `m.id.split('/')` sin guarda: si el backend devolviera un
   string (el código intenta soportar ambos), **revienta con TypeError** dentro de un
@@ -118,17 +118,17 @@ recuperable como *referencia*, no como base. Lo que rompe:
 - `sessions/<id>/` sólo guarda 4 archivos de configuración (state.json, dos YAML, un
   example). **No es un workspace, es un perfil.**
 - En el DOM no existe **ningún** elemento de workspace (`workspaceEls: 0`).
-- Consecuencia demostrable: en los tests, ENLIL escribió `hello.txt` y `workspace/
+- Consecuencia demostrable: en los tests, Orchestrator escribió `hello.txt` y `workspace/
   prueba_artefacto.txt` **en la raíz del proyecto**, ensuciando el repo del usuario.
 
 ### 2.5 El gate no protege el camino del agente (hallazgo grave, verificado por mí)
 
-- `enlil.py:407` calcula `decision = self.gate.evaluate(tool="route", ...)` y **nunca usa
+- `orchestrator.py:407` calcula `decision = self.gate.evaluate(tool="route", ...)` y **nunca usa
   `decision`**. No hay rama de bloqueo.
-- `enlil.py:875-884`: `_execute_tool()` hace `await self.mcp.call(tool_name, params)`
+- `orchestrator.py:875-884`: `_execute_tool()` hace `await self.mcp.call(tool_name, params)`
   directo, sin pasar por el gate ni por approvals.
 - Contraste: `api/files_api.py`, `api/shell_api.py`, `api/search_api.py` y
-  `agents/ENKI/enki.py:234` **sí** consultan el gate.
+  `agents/Planner/planner.py:234` **sí** consultan el gate.
 - **Consecuencia:** por la UI, un `write_file` o `execute_command` decidido por el modelo
   se ejecuta sin aprobación. Lo verifiqué indirectamente: en el e2e el archivo se creó sin
   que apareciera ninguna tarjeta de aprobación.
@@ -142,9 +142,9 @@ recuperable como *referencia*, no como base. Lo que rompe:
   los métodos `_run_visual_audit` / `_run_visual_audit_sync` que la invocan **no existen**.
   La implementación real (`system/visual_auditor.py`) está huérfana. Hay 87 grafos pero la
   capacidad estrella está muerta.
-- `SHAMASH.get_recent_work()` lanza `NameError` (falta `import sqlite3`) y
+- `Curator.get_recent_work()` lanza `NameError` (falta `import sqlite3`) y
   `estimate_repo_size()` lanza `AttributeError` (`self._dir_size` no existe).
-- NISABA RAG probablemente roto por mismatch de dimensiones de embedding
+- Retriever RAG probablemente roto por mismatch de dimensiones de embedding
   (docs sin embedding 384d vs query 768d).
 - El flujo de chat normal **nunca genera Task Graph**: `route()` va directo a
   `_agent_loop`. El grafo solo se alcanza por `/fix` y `/loop`. O sea: el motor más
@@ -193,7 +193,7 @@ cliente sobre ese contrato. El backend necesita tres arreglos puntuales (§6, bl
 4. **`system/mcp_manager.py`** + los 8 tools `*_mcp.py`. Se borra el wrapper muerto.
 5. **`system/observability.py`** + `traces.jsonl` — sin UI no vale nada; con UI es oro.
 6. **Approvals end-to-end** (crear → aprobar → ejecutar, idempotente).
-7. **SHAMASH memoria** (`memory.py`) y **NISABA retrieval** — arreglando los 3 bugs.
+7. **Curator memoria** (`memory.py`) y **Retriever retrieval** — arreglando los 3 bugs.
 8. **`api/version.py` + `VCORE_STATE.json`** — el patrón de fuente única es correcto.
 9. **La paleta y el sistema de tokens de `style.css`** — 2 temas × 6 acentos bien
    resueltos (dark `--surf-chat`, light con cyan `#007A99` para contraste). Se hereda
@@ -218,7 +218,7 @@ cliente sobre ese contrato. El backend necesita tres arreglos puntuales (§6, bl
 6. **Todo el sistema de artefactos en `localStorage`** — se pierde al cambiar de navegador
    y no es consultable. Va a SQLite.
 7. **Código muerto**: `mcp_client.py`, `vcore_{fs,shell,audit}.py`, `_execute_tool_legacy`
-   (300+ líneas en `enlil.py`), `docs/ROADMAP_TAURI.md` como plan vigente.
+   (300+ líneas en `orchestrator.py`), `docs/ROADMAP_TAURI.md` como plan vigente.
 8. **Los tres documentos del refactor fantasma** (`ROADMAP_FRONTEND.md`,
    `FUNCIONES_PERDIDAS.md`, `AUDITORIA_FUNCIONES.md`): se consolidan en uno y se archivan.
 9. **`workspace/` como carpeta decorativa** con solo `uploads/`.
@@ -321,13 +321,13 @@ Nada se da por bueno sin evidencia (captura + endpoint + test).
 
 ### P0 — Verdades del backend (sin esto, la UI miente)
 
-1. **Cablear el gate al agent loop** (`enlil.py`): `_execute_tool` consulta el gate;
+1. **Cablear el gate al agent loop** (`orchestrator.py`): `_execute_tool` consulta el gate;
    nivel B crea approval y **detiene** la ejecución hasta resolución. Cierra el agujero de
    §2.5. De paso, el evento `approval.requested` ya existe en el protocolo.
 2. **Unificar sesión ↔ thread ↔ workspace**: `ChatMessage.session_dir` obligatorio,
    historial por `thread_id` (no `int`), y `GET /threads/{id}` con metadata + eventos.
-3. **Arreglar los tres bugs de memoria/retrieval**: `import sqlite3` en `shamash.py`,
-   `_dir_size`, y dimensiones de embedding en NISABA (verificar contra Chroma real).
+3. **Arreglar los tres bugs de memoria/retrieval**: `import sqlite3` en `curator.py`,
+   `_dir_size`, y dimensiones de embedding en Retriever (verificar contra Chroma real).
 4. **Revivir o enterrar `visual_audit`**: importar `system/visual_auditor.py` en el
    catálogo MCP **o** borrar las 3 referencias muertas. No puede quedar a medias.
 5. **Versionado**: una sola fuente (`VCORE_STATE.json`), bump a **2.0.0** por ser un
@@ -339,7 +339,7 @@ Nada se da por bueno sin evidencia (captura + endpoint + test).
 
 7. Definir el envelope tipado (§5.1) en `api/events.py`, con `seq` monotónico por run.
 8. Persistir eventos en `events` + `snapshot`; endpoint `GET /threads/{id}/events?after=seq`.
-9. Adaptar ENLIL para emitir el envelope v1 (traducción en el borde, no en cada tool).
+9. Adaptar Orchestrator para emitir el envelope v1 (traducción en el borde, no en cada tool).
 
 ### P2 — Frontend nuevo desde cero
 
@@ -398,7 +398,7 @@ Nada se da por bueno sin evidencia (captura + endpoint + test).
 - El informe de "estado del arte" (subagente) verificó nombres de specs y versiones
   mayores contra fuentes; no verificó versiones patch ni benchmarks.
 - El inventario agentivo (subagente) fue contrastado por mí en los puntos críticos:
-  gate no cableado (`enlil.py:407,881`), memoria existente (`memory.py`, 23 filas),
+  gate no cableado (`orchestrator.py:407,881`), memoria existente (`memory.py`, 23 filas),
   y ausencia de Task Graph en el chat normal. Los puntos que cito como verificados los leí
   en el código; los que no leí están atribuidos a la auditoría y marcados como tales.
 - Las capturas en `.audit_shots/` son de hoy, con el sistema vivo. Sirven como "antes"

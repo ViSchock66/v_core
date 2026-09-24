@@ -1,23 +1,23 @@
 """
-agents/NISABA/nisaba.py
+agents/Retriever/retriever.py
 =======================
-NISABA — RAG, Búsqueda, Filesystem, Impact Mapping — V-CORE v1.4
+Retriever — RAG, Búsqueda, Filesystem, Impact Mapping — V-CORE v1.4
 
 Responsabilidades:
   - Busqueda semantica en codigo/docs via ChromaDB
   - Indexacion incremental por hash de archivo
   - Filesystem tree con metadatos (rol ex-NINSUN)
   - Impact Mapping efimero por tarea ("si cambio X, que se rompe?")
-  - Tamano del repo para SHAMASH (token budget adaptivo)
+  - Tamano del repo para Curator (token budget adaptivo)
 
 Embeddings: unificados via api/embed.py (3-tier: Ollama → NIM → hash)
 Vector DB: ChromaDB persistente en chroma_db/
 
 Uso:
-    from agents.NISABA.nisaba import NISABA
-    nisaba = NISABA()
-    results = await nisaba.search("query de busqueda")
-    mapa = nisaba.get_impact_map("api/main.py")
+    from agents.Retriever.retriever import Retriever
+    retriever = Retriever()
+    results = await retriever.search("query de busqueda")
+    mapa = retriever.get_impact_map("api/main.py")
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ from api.embed import (
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent  # V-CORE/
 DB_PATH = BASE_DIR / "vcore.db"
-# Almacén Chroma compartido con SHAMASH (ver api/embed.py). Antes NISABA apuntaba
+# Almacén Chroma compartido con Curator (ver api/embed.py). Antes Retriever apuntaba
 # a `knowledge/.chromadb/`, un directorio que no existía: ChromaDB lo creaba
 # vacío y el RAG operaba sobre una base distinta a la de los embeddings reales.
 CHROMA_PATH = CHROMA_DIR
@@ -58,7 +58,7 @@ WORKSPACE_DIR = BASE_DIR / "workspace"
 # Nombre base de la colección. El efectivo agrega las dimensiones activas.
 COLLECTION_BASE = "vcore_knowledge"
 
-# Extensiones de codigo que NISABA indexa
+# Extensiones de codigo que Retriever indexa
 CODE_EXTENSIONS = {
     ".py", ".js", ".ts", ".yaml", ".yml", ".json", ".md",
     ".html", ".css", ".cpp", ".c", ".h", ".hpp", ".ps1",
@@ -83,17 +83,17 @@ IMPORT_PATTERNS = {
 
 
 # =============================================================================
-# NISABA
+# Retriever
 # =============================================================================
 
-class NISABA:
+class Retriever:
     """
     RAG + Filesystem + Impact Mapping.
     Solo lectura + indexacion. Nunca modifica archivos de codigo.
     """
 
     def __init__(self):
-        self.agent_name = "NISABA"
+        self.agent_name = "Retriever"
         self._client: Optional[chromadb.PersistentClient] = None
         self._collection = None
 
@@ -170,7 +170,7 @@ class NISABA:
             return output
 
         except Exception as e:
-            print(f"[NISABA] Error en busqueda: {e}")
+            print(f"[Retriever] Error en busqueda: {e}")
             return []
 
     # ------------------------------------------------------------------
@@ -188,9 +188,9 @@ class NISABA:
         # --- Gap 3: Validar path con gate antes de leer ---
         from gate import Gate
         gate = Gate("gate_rules.yaml")
-        decision = gate.evaluate("read_file", {"path": filepath}, agent_id="NISABA")
+        decision = gate.evaluate("read_file", {"path": filepath}, agent_id="Retriever")
         if not decision.auto_approved:
-            print(f"[NISABA] Gate bloqueó indexación: {decision.reason}")
+            print(f"[Retriever] Gate bloqueó indexación: {decision.reason}")
             return False
         # --- fin Gap 3 ---
 
@@ -259,7 +259,7 @@ class NISABA:
             return True
 
         except Exception as e:
-            print(f"[NISABA] Error indexando {filepath}: {e}")
+            print(f"[Retriever] Error indexando {filepath}: {e}")
             return False
 
     def index_project(self, root: str = "") -> dict[str, int]:
@@ -325,7 +325,7 @@ class NISABA:
         from gate import Gate
         gate = Gate("gate_rules.yaml")
         root_path = Path(root) if root else WORKSPACE_DIR
-        decision = gate.evaluate("read_file", {"path": str(root_path)}, agent_id="NISABA")
+        decision = gate.evaluate("read_file", {"path": str(root_path)}, agent_id="Retriever")
         if not decision.auto_approved:
             return {"name": root_path.name, "type": "directory", "children": [], "error": f"Gate bloqueó: {decision.reason}"}
         # --- fin Gap 3 ---
@@ -442,7 +442,7 @@ class NISABA:
         }
 
     # ------------------------------------------------------------------
-    # 5. REPO SIZE (para SHAMASH)
+    # 5. REPO SIZE (para Curator)
     # ------------------------------------------------------------------
 
     def get_repo_size_kb(
@@ -452,7 +452,7 @@ class NISABA:
     ) -> int:
         """
         Tamano total del repositorio en KB.
-        Cuando NISABA existe, SHAMASH delega a este metodo.
+        Cuando Retriever existe, Curator delega a este metodo.
 
         Args:
             root: Path a medir (default: V-CORE raiz)
@@ -502,7 +502,7 @@ class NISABA:
         """
         # Placeholder: en el futuro se puede integrar con
         # DuckDuckGo, SerpAPI, o Google Custom Search
-        print(f"[NISABA] web_search solicitada pero no configurada: '{query}'")
+        print(f"[Retriever] web_search solicitada pero no configurada: '{query}'")
         return []
 
     # ------------------------------------------------------------------
@@ -557,7 +557,7 @@ class NISABA:
             conn.commit()
             conn.close()
         except Exception as e:
-            print(f"[NISABA] Error actualizando hash: {e}")
+            print(f"[Retriever] Error actualizando hash: {e}")
 
     @staticmethod
     def _chunk_text(text: str, doc_id: str, chunk_size: int = 500) -> list[str]:
@@ -663,7 +663,7 @@ class NISABA:
         return importers
 
     # ------------------------------------------------------------------
-    # INTEGRACION CON SHAMASH
+    # INTEGRACION CON Curator
     # ------------------------------------------------------------------
 
     @staticmethod

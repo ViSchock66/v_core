@@ -102,7 +102,7 @@ def run():
 
         # ═══ 9.4: SEND REAL MESSAGE ═══
         pg.fill("#input-field", "")
-        pg.fill("#input-field", "Hola ENLIL, responde con un JSON {\"status\":\"ok\"}")
+        pg.fill("#input-field", "Hola Orchestrator, responde con un JSON {\"status\":\"ok\"}")
         pg.wait_for_timeout(100)
         pg.click("#send-btn")
         pg.wait_for_timeout(TIMEOUT)

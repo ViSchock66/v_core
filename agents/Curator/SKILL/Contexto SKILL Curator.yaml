@@ -20,7 +20,7 @@ Lee:
 4. Lecciones antiguas (descartar si overflow)
 
 ### 2. Resumen — `summarize_file()`
-Resumen de archivo con fragmentos de contexto de línea para ENKI.
+Resumen de archivo con fragmentos de contexto de línea para Planner.
 
 - No enviar el archivo completo nunca
 - Extraer fragmento relevante ±20 líneas del search_block
@@ -31,9 +31,9 @@ Resumen de archivo con fragmentos de contexto de línea para ENKI.
 - `record_quality(task_id, score, feedback)` → Fase 1 del Evaluation Loop
 
 ## Reglas absolutas
-- SHAMASH es **solo lectura** — sin tools de ejecución
+- Curator es **solo lectura** — sin tools de ejecución
 - Nunca ejecuta código ni modifica archivos
-- Hook obligatorio — ningún nodo ejecuta sin SHAMASH primero
+- Hook obligatorio — ningún nodo ejecuta sin Curator primero
 - Siempre el primer nodo del Task Graph
 
 ## Sanitización para API

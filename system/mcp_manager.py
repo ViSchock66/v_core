@@ -9,7 +9,7 @@ Carga servidores desde mcp_config.json:
   - type: "http"  → servidores externos via streamablehttp_client
 
 Usa tipos estándar MCP (mcp.types.Tool, TextContent) para definición de tools
-y resultados. La interfaz que ve ENLIL no cambia — get_tools_catalog() y call().
+y resultados. La interfaz que ve Orchestrator no cambia — get_tools_catalog() y call().
 
 Migración desde system/mcp_client.py (custom dispatcher, 160 LOC).
 """
@@ -158,11 +158,11 @@ class MCPManager:
         manager = MCPManager()
         await manager.initialize()
 
-        # ENLIL usa esto para el system prompt
+        # Orchestrator usa esto para el system prompt
         tools = manager.get_tools_catalog()
 
-        # ENLIL dispatcha tools así
-        result = await manager.call("read_file", {"path": "agents/ENLIL/enlil.py"})
+        # Orchestrator dispatcha tools así
+        result = await manager.call("read_file", {"path": "agents/Orchestrator/orchestrator.py"})
     """
 
     def __init__(self, config_path: Path | None = None):
@@ -247,7 +247,7 @@ class MCPManager:
     # ── Public API (misma interfaz que el viejo MCPClient) ────────────
 
     async def get_tools_catalog(self) -> list[dict]:
-        """Retorna tools en formato OpenAI-compatible (para system prompt de ENLIL).
+        """Retorna tools en formato OpenAI-compatible (para system prompt de Orchestrator).
 
         Cada tool: {name, description, parameters: {type: "object", properties: {...}}}
         """

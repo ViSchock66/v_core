@@ -6,11 +6,11 @@ Puerto canonico del backend de V-CORE — fuente unica.
 Por que existe
 --------------
 El proyecto tenia el puerto partido: `start_vcore.bat`, `start_clean.sh`,
-`vcore.py` (CLI), `enlil.py`, `system/mcp_servers/*`, `visual_auditor.py` y
+`vcore.py` (CLI), `orchestrator.py`, `system/mcp_servers/*`, `visual_auditor.py` y
 `watchdog.py` apuntaban a 8000, mientras el README y `AGENTS.md` decian 8001.
 Consecuencia real y verificada: el servidor levantado en 8001 no era
 alcanzable por el CLI (`WinError 10061`) ni por la tool `background_task` de
-ENLIL, que hacia urlopen a :8000 sin capturar el error.
+Orchestrator, que hacia urlopen a :8000 sin capturar el error.
 
 Regla
 -----

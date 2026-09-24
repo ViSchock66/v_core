@@ -55,7 +55,7 @@ export function ApprovalCard({ approval }: { approval: Approval }) {
       <div className="mb-2 space-y-1">
         <div className="flex gap-2 text-[11px]">
           <span className="w-16 shrink-0 text-t-tertiary">agente</span>
-          <span className="font-mono text-t-secondary">{approval.agentId ?? 'ENLIL'}</span>
+          <span className="font-mono text-t-secondary">{approval.agentId ?? 'Orchestrator'}</span>
         </div>
         <div className="flex gap-2 text-[11px]">
           <span className="w-16 shrink-0 text-t-tertiary">acción</span>

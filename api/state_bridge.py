@@ -45,7 +45,7 @@ _STATE_DEFAULTS: dict[str, Any] = {
     "agentes_pendientes": [],
     "mcp_activos": [],
     "scripts_operativos": [],
-    "enlil_backend": "cloud",
+    "orchestrator_backend": "cloud",
     "tokens_sesion": 0,
 }
 

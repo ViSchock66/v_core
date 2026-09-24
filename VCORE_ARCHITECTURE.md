@@ -22,10 +22,10 @@ prosa: consultar `model_routing.yaml` o `GET /system/model`.
 ```text
 Frontend (Vanilla JS)
   -> FastAPI (`api/main.py`)
-     -> ENLIL: orquestación y streaming SSE
-     -> ENKI: planificación, aplicación y verificación de cambios
-     -> SHAMASH: contexto y persistencia de memoria
-     -> NISABA: búsqueda, indexación e impacto
+     -> Orchestrator: orquestación y streaming SSE
+     -> Planner: planificación, aplicación y verificación de cambios
+     -> Curator: contexto y persistencia de memoria
+     -> Retriever: búsqueda, indexación e impacto
      -> LLMRouter: providers, presets, fallback, rate limiting y circuit breaker
      -> MCPManager: catálogo y ejecución de herramientas
      -> SQLite / ChromaDB: sesiones, uso, aprobaciones y memoria
@@ -51,10 +51,10 @@ No se mantiene aquí un número de endpoints: cambia al registrar routers.
 
 | Componente | Responsabilidad |
 |---|---|
-| ENLIL | Punto de entrada de conversación, routing, tool loop y streaming. |
-| ENKI | Planificación, aplicación y verificación de cambios de código. |
-| SHAMASH | Contexto y memoria persistente con SQLite y ChromaDB; no tiene modelo LLM propio. |
-| NISABA | Indexación, recuperación semántica, filesystem e impact mapping. |
+| Orchestrator | Punto de entrada de conversación, routing, tool loop y streaming. |
+| Planner | Planificación, aplicación y verificación de cambios de código. |
+| Curator | Contexto y memoria persistente con SQLite y ChromaDB; no tiene modelo LLM propio. |
+| Retriever | Indexación, recuperación semántica, filesystem e impact mapping. |
 
 Los documentos de cada agente detallan su contrato. La configuración de sus
 modelos se consulta siempre en `model_routing.yaml`.
@@ -71,7 +71,7 @@ SHA-256. Esto evita que la memoria tenga una dependencia externa obligatoria.
 
 ### Herramientas
 
-ENLIL integra `system/mcp_manager.py`. Este módulo carga `mcp_config.json`,
+Orchestrator integra `system/mcp_manager.py`. Este módulo carga `mcp_config.json`,
 descubre herramientas externas cuando están disponibles y registra servidores
 locales. `system/mcp_client.py` y algunos servidores antiguos permanecen por
 compatibilidad; no son la interfaz preferida para trabajo nuevo.

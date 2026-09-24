@@ -92,7 +92,7 @@ instrucción ni alterar reglas protegidas.
 **Contexto nuevo:** durante la auditoría se encontró un archivo de prueba con
 exactamente esa inyección (`notas_proyecto.txt`, instrucciones para sobrescribir
 `gate_rules.yaml`) versionado dentro de `workspace/`, que es la raíz por defecto
-que NISABA usa para indexar. Se removió del repositorio, pero **el caso no se
+que Retriever usa para indexar. Se removió del repositorio, pero **el caso no se
 probó**: no está verificado que el sistema resista la instrucción si ese
 archivo se lee durante una tarea.
 

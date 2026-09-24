@@ -5,7 +5,7 @@ vcore.py — CLI de V-CORE v1.2
 14 comandos, ~50 subcomandos. Respaldado por la API REST + acceso directo a DB/archivos.
 
 Uso:
-    vcore chat                  Sesión interactiva con ENLIL
+    vcore chat                  Sesión interactiva con Orchestrator
     vcore chat -q "msg"         One-shot, imprime y sale
     vcore chat -c               Continuar última sesión
     vcore chat -r <id>          Resumir sesión por ID
@@ -224,7 +224,7 @@ def _yesno(prompt: str) -> bool:
 # ─────────────────────────────────────────────────────────────
 
 def cmd_chat(args):
-    """Interactivo o one-shot con ENLIL."""
+    """Interactivo o one-shot con Orchestrator."""
     if args.query:
         _chat_oneshot(args.query)
     elif args.continue_:
@@ -347,7 +347,7 @@ def _chat_interactive():
     print(banner)
     try:
         model_info = _api("/system/model")
-        lead = model_info.get("enlil_lead", {}).get("model", "?")
+        lead = model_info.get("orchestrator_lead", {}).get("model", "?")
         print(f"  {S.label('lead')} {S.dim('=')} {lead}\n")
     except Exception:
         pass
@@ -464,7 +464,7 @@ def _handle_slash(raw: str, session_id: str) -> bool | None:
         picked = _interactive_pick(items, "modelos — selecciona para cambiar lead")
         if picked and picked.get("value") is not None:
             model = picked["value"]
-            _api("/system/model", method="POST", data={"role": "enlil_lead", "model": model["id"]})
+            _api("/system/model", method="POST", data={"role": "orchestrator_lead", "model": model["id"]})
             print(f"  {S.OK} lead {S.dim('->')} {S.label(model.get('name', model['id']))}")
         return True
 
@@ -695,7 +695,7 @@ def cmd_models(args):
             pri = m.get("priority", "")
             active = f" {S.dim('(activo)')}" if pri == 1 else ""
             print(f"  {S.label(name)} {S.dim(f'ctx={ctx}')}{active} {S.dim(model_id)}")
-        lead = _api("/system/model").get("enlil_lead", {})
+        lead = _api("/system/model").get("orchestrator_lead", {})
         print(f"\n  {S.dim('lead activo:')} {S.label(lead.get('model','?'))}")
     elif args.action == "switch":
         result = _api("/system/model", method="POST",
@@ -987,8 +987,8 @@ def cmd_doctor(args):
     # 4. Modelos
     try:
         mi = _api("/system/model")
-        lead = mi.get("enlil_lead", {})
-        council = mi.get("enlil_council", {})
+        lead = mi.get("orchestrator_lead", {})
+        council = mi.get("orchestrator_council", {})
         sections.append((f"{S.label('modelos')}",
             f"{S.dim('lead:')} {lead.get('model','?')} {S.dim('via')} {lead.get('provider','?')} {S.dim('cb:')} {lead.get('circuit_breaker','?')}\n"
             f"     {S.dim('council:')} {council.get('model','?')} {S.dim('via')} {council.get('provider','?')} {S.dim('cb:')} {council.get('circuit_breaker','?')}"))
@@ -1058,7 +1058,7 @@ def cmd_status(args):
         "version": cli_version,
         "root": str(ROOT),
         "api": API_BASE,
-        "agents": ["ENLIL", "ENKI", "SHAMASH", "NISABA"],
+        "agents": ["Orchestrator", "Planner", "Curator", "Retriever"],
     }
     try:
         health = _api("/health")
@@ -1089,7 +1089,7 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     # ── chat ──
-    p = sub.add_parser("chat", help="Chat con ENLIL")
+    p = sub.add_parser("chat", help="Chat con Orchestrator")
     p.add_argument("-q", "--query", help="Mensaje one-shot")
     p.add_argument("-c", "--continue", dest="continue_", action="store_true",
                    help="Continuar última sesión")
@@ -1137,7 +1137,7 @@ def main():
     sp = p.add_subparsers(dest="action")
     sp.add_parser("list", help="Listar modelos")
     sp_switch = sp.add_parser("switch", help="Cambiar modelo")
-    sp_switch.add_argument("role", help="Rol (lead, council, enki_plan, etc.)")
+    sp_switch.add_argument("role", help="Rol (lead, council, planner_plan, etc.)")
     sp_switch.add_argument("model", help="Modelo a usar")
     sp.add_parser("presets", help="Ver presets con context windows")
     p.set_defaults(func=cmd_models)

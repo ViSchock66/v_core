@@ -9,7 +9,7 @@ Sustituye al gate actual (`gate.py` + `gate_rules.yaml`, niveles A/B) por un **P
 ## 0. Estado actual (hallazgos verificados)
 
 - `gate.py` (clase `Gate`) está bien escrito y es fail-safe: ya resuelve paths con `Path.resolve()` (`_normalize_path`), compara con `Path.relative_to()` (`_is_path_under`), valida `agent_path_allowlist` y loguea a `gate_log` (1.685 filas). **Se reusa íntegro.**
-- **El hueco crítico:** `agents/ENLIL/enlil.py` → `_execute_tool()` llama `self.mcp.call(tool_name, params)` **directamente**. El único `gate.evaluate()` está en `route()` (tool `route`), no en el dispatch de tools. `write_file`, `patch_file` y `execute_command` pasan **sin comprobación**.
+- **El hueco crítico:** `agents/Orchestrator/orchestrator.py` → `_execute_tool()` llama `self.mcp.call(tool_name, params)` **directamente**. El único `gate.evaluate()` está en `route()` (tool `route`), no en el dispatch de tools. `write_file`, `patch_file` y `execute_command` pasan **sin comprobación**.
 - `execute_command` (`system/mcp_servers/vcore_shell_mcp.py::_execute_command`) corre `subprocess.run(..., shell=True)`, `timeout=30`, `cwd=BASE_DIR`: **sin allowlist, sin sandbox, sin límites de recursos más allá del timeout, sin default-deny de red.**
 - Los handlers de `vcore_fs_mcp.py` usan `_resolve()` (`BASE_DIR / path` sin colapsar `..` ni resolver symlinks): existe un **agujero de path traversal/symlink independiente del gate** (ej. `write_file` con `../../fuera.txt` escribe fuera del repo).
 - Ya existe HITL **asíncrono**: tabla `approvals` + `api/state_bridge.py` (`create_approval`, `list_approvals`, `get_approval`, `resolve_approval`) y endpoints `GET/POST /approvals`, `/approvals/{id}/approve`, `/approvals/{id}/reject`. Falta el **síncrono sobre el stream**.
@@ -81,7 +81,7 @@ Ejemplo real (comando fuera de allowlist):
   "run_id": "task_9e1d2c",
   "session_id": 42,
   "ts": 1767000000.123,
-  "agent_id": "ENLIL",
+  "agent_id": "Orchestrator",
   "tool": "execute_command",
   "params": { "command": "git push --force origin main" },
   "effect": "deny",
@@ -389,7 +389,7 @@ def resolve(request_id: str, approved: bool, by: str) -> bool:
 Se unifican los 4 bloques de dispatch duplicados de `_agent_loop` (native TC, `TOOL:`, bare, JSON) en un único helper **async generator** que emite eventos SSE y termina con el resultado como último item:
 
 ```python
-# agents/ENLIL/enlil.py — reemplaza a _execute_tool()
+# agents/Orchestrator/orchestrator.py — reemplaza a _execute_tool()
 async def _dispatch_tool(self, tool_name: str, params: dict, task_id: str):
     """Gate -> (deny | ask | permit) -> ejecución -> evento. Último item = resultado."""
     d = self.gate.decide(tool_name, params, agent_id=self.agent_name, run_id=task_id)
@@ -573,7 +573,7 @@ Orden por prioridad (la Fase 2 cierra el hueco de seguridad crítico con mínimo
 - Tests unitarios del PDP (tabla de la sección 9).
 
 **Fase 2 — Cablear el gate en el dispatch (corta el sangrado).**
-- En `agents/ENLIL/enlil.py::_execute_tool`: al inicio, `d = self.gate.decide(tool_name, params, self.agent_name, task_id)`. Para `deny` devolver mensaje sin ejecutar; para `ask`, en esta fase sin HITL síncrono todavía, caer al flujo async existente (`sb.create_approval(...)`) y devolver "requiere aprobación" al loop. `permit` → `self.mcp.call(...)`.
+- En `agents/Orchestrator/orchestrator.py::_execute_tool`: al inicio, `d = self.gate.decide(tool_name, params, self.agent_name, task_id)`. Para `deny` devolver mensaje sin ejecutar; para `ask`, en esta fase sin HITL síncrono todavía, caer al flujo async existente (`sb.create_approval(...)`) y devolver "requiere aprobación" al loop. `permit` → `self.mcp.call(...)`.
 - Con esto, **ninguna** tool se ejecuta sin pasar por el PDP (aunque la aprobación sea async por ahora).
 
 **Fase 3 — Guard de comandos.**
@@ -603,7 +603,7 @@ Tabla entrada → decisión esperada → por qué (el PDP debe pasarlos todos):
 
 | # | Entrada (tool, params) | Decisión | Por qué |
 |---|---|---|---|
-| 1 | `read_file` `{path: "agents/ENLIL/enlil.py"}` | permit / low | lectura dentro de roots |
+| 1 | `read_file` `{path: "agents/Orchestrator/orchestrator.py"}` | permit / low | lectura dentro de roots |
 | 2 | `read_file` `{path: "C:/Windows/System32/drivers/etc/hosts"}` | ask / medium | lectura fuera del perímetro |
 | 3 | `read_file` `{path: ".env"}` | deny / critical | secretos |
 | 4 | `write_file` `{path: "workspace/out.txt"}` (sandbox on) | permit / low | escritura dentro del perímetro en sandbox |

@@ -74,7 +74,7 @@ def create_audit_server() -> LocalMCPServer:
 async def _visual_audit(instructions: str = "", analyze: bool = True) -> str:
     """Auditoría visual del frontend.
 
-    La tool estaba ANUNCIADA en el prompt del agente (`enlil.py` la lista como
+    La tool estaba ANUNCIADA en el prompt del agente (`orchestrator.py` la lista como
     acción disponible) pero no registrada en el catálogo MCP: `mcp.call`
     respondía "herramienta desconocida". Tres referencias muertas en total —
     el catálogo, `TaskGraphEngine._run_visual_audit_sync` y

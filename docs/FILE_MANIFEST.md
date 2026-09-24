@@ -11,31 +11,31 @@
 V-Core/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml (92 lines)
+│       └── ci.yml (95 lines)
 ├── agents/
-│   ├── ENKI/
+│   ├── Curator/
 │   │   ├── SKILL/
-│   │   │   └── Programacion SKILL ENKI.yaml (71 lines)
-│   │   ├── ENKI.md (72 lines)
-│   │   └── enki.py (868 lines)
-│   ├── ENLIL/
+│   │   │   └── Contexto SKILL Curator.yaml (47 lines)
+│   │   ├── Curator.md (45 lines)
+│   │   ├── curator.py (322 lines)
+│   │   └── memory.py (482 lines)
+│   ├── Orchestrator/
 │   │   ├── SKILL/
-│   │   │   └── Orquesta SKILL ENLIL.yaml (62 lines)
-│   │   ├── ENLIL.md (59 lines)
-│   │   └── enlil.py (2152 lines)
-│   ├── NISABA/
-│   │   ├── SKILLS/
-│   │   │   ├── Filesystem SKILL NISABA.yaml (34 lines)
-│   │   │   ├── Impact mapping SKILL NISABA .yaml (44 lines)
-│   │   │   └── Index SKILL NISABA.yaml (49 lines)
-│   │   ├── NISABA.md (49 lines)
-│   │   └── nisaba.py (685 lines)
-│   └── SHAMASH/
-│       ├── SKILL/
-│       │   └── Contexto SKILL SHAMASH.yaml (47 lines)
-│       ├── SHAMASH.md (45 lines)
-│       ├── memory.py (482 lines)
-│       └── shamash.py (322 lines)
+│   │   │   └── Orquesta SKILL Orchestrator.yaml (62 lines)
+│   │   ├── Orchestrator.md (59 lines)
+│   │   └── orchestrator.py (2152 lines)
+│   ├── Planner/
+│   │   ├── SKILL/
+│   │   │   └── Programacion SKILL Planner.yaml (71 lines)
+│   │   ├── Planner.md (72 lines)
+│   │   └── planner.py (868 lines)
+│   └── Retriever/
+│       ├── SKILLS/
+│       │   ├── Filesystem SKILL Retriever.yaml (34 lines)
+│       │   ├── Impact mapping SKILL Retriever .yaml (44 lines)
+│       │   └── Index SKILL Retriever.yaml (49 lines)
+│       ├── Retriever.md (49 lines)
+│       └── retriever.py (685 lines)
 ├── api/
 │   ├── __init__.py (0 lines)
 │   ├── approval_broker.py (202 lines)
@@ -56,7 +56,7 @@ V-Core/
 │   ├── COMPARATIVA_HARNESSES.md (428 lines)
 │   ├── DISENO_PERMISOS.md (634 lines)
 │   ├── DOCUMENTATION.md (56 lines)
-│   ├── FILE_MANIFEST.md (265 lines)
+│   ├── FILE_MANIFEST.md (158 lines)
 │   ├── PLAN_REFACTOR_V2.md (642 lines)
 │   ├── ROADMAP_TAURI.md (124 lines)
 │   ├── SESSION_ISOLATION_ARCHITECTURE.md (258 lines)
@@ -65,7 +65,7 @@ V-Core/
 │   ├── _npm.py (32 lines)
 │   ├── audit.py (507 lines)
 │   ├── audit_live.py (136 lines)
-│   ├── audit_public.py (276 lines)
+│   ├── audit_public.py (281 lines)
 │   ├── capture_frontend.py (222 lines)
 │   ├── diagnostics.py (143 lines)
 │   ├── e2e_chat_full.py (94 lines)

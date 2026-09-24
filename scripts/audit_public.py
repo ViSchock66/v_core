@@ -19,7 +19,7 @@ Checks (sobre archivos trackeados; `--history` extiende al historial git):
   4. Archivos sensibles alguna vez commiteados (.env, .env.keys, .db,
      .jsonl, .zip, credential, .pem) — solo con --history.
      Nota: el "memory" del plan se cubre con .db/.jsonl (dumps);
-     agents/SHAMASH/memory.py es fuente legítima, no un dump.
+     agents/Curator/memory.py es fuente legítima, no un dump.
   5. Contenido de los zips del historial — .env / bases de datos dentro.
 
 Uso:

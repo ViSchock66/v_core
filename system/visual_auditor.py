@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 V-CORE Visual Auditor — módulo compartido (consolidado).
-Usado por: ENLIL agent loop (task_graph_engine) + CLI standalone (visual_auditor_v2.py).
+Usado por: Orchestrator agent loop (task_graph_engine) + CLI standalone (visual_auditor_v2.py).
 
 Fase 1: Playwright DOM — detecta bugs estructurales (MISSING, consola errores, interacciones rotas).
 Fase 2: NIM vision (council/escalation) — solo si Fase 1 no encontró bugs y el usuario pidió análisis visual.
@@ -252,7 +252,7 @@ def run_visual_audit(base_url: str | None = None,
                 "bugs": bugs,
                 "bug_count": bug_count,
                 # Alias consumido por los comandos /audit, /viz y el polish loop
-                # de ENLIL, que leen `findings`. Estaba sin definir: esos comandos
+                # de Orchestrator, que leen `findings`. Estaba sin definir: esos comandos
                 # hacian data.get("findings", []) y siempre obtenian lista vacia,
                 # asi que reportaban "sin bugs" aunque hubiera hallazgos.
                 "findings": bugs,

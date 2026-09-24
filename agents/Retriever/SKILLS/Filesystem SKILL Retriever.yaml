@@ -13,7 +13,7 @@ description: Operaciones de filesystem — árbol de archivos, metadatos, exclus
 - Máxima profundidad: configurable (default: 5)
 
 ### 2. Tamaño — `get_repo_size_kb()`
-- Reemplaza `SHAMASH.estimate_repo_size()` cuando está disponible
+- Reemplaza `Curator.estimate_repo_size()` cuando está disponible
 - Usa `os.scandir` (más eficiente que `os.walk`)
 - Cache por 5 minutos para evitar escaneo repetido
 

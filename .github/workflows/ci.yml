@@ -37,7 +37,7 @@ jobs:
       - name: Instalar dependencias
         # ChromaDB arrastra onnxruntime y es pesado; para CI alcanza con el
         # núcleo, porque el código degrada sin él (api/embed.py tiene
-        # fallback de 3 niveles y SHAMASH cae a SQLite).
+        # fallback de 3 niveles y Curator cae a SQLite).
         run: |
           python -m pip install --upgrade pip
           grep -v '^chromadb' requirements.txt | grep -v '^#' > /tmp/req-ci.txt || true

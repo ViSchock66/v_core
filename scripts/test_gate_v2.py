@@ -54,7 +54,7 @@ def main() -> int:
     print(f"{'RES':6s} {'TOOL':18s} {'EFECTO':8s} {'RIESGO':9s} {'REGLA':32s} CASO")
     print("-" * 118)
     for tool, params, expect, why in CASOS:
-        d = gate.evaluate(tool, params, agent_id="ENLIL", context=CTX)
+        d = gate.evaluate(tool, params, agent_id="Orchestrator", context=CTX)
         passed = d.effect == expect
         ok += passed
         fallos += (not passed)
@@ -71,7 +71,7 @@ def main() -> int:
     for tool, params in (("read_file", {"path": "README.md"}),
                          ("write_file", {"path": "workspace/x.txt"}),
                          ("execute_command", {"command": "ls"})):
-        d = gate.evaluate(tool, params, agent_id="ENLIL", context=CTX)
+        d = gate.evaluate(tool, params, agent_id="Orchestrator", context=CTX)
         print(f"  {tool:16s} nivel={d.nivel} auto_approved={d.auto_approved} effect={d.effect}")
 
     print("\n--- cobertura del catálogo ---")

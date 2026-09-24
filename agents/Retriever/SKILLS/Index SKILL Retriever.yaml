@@ -45,5 +45,5 @@ description: Indexa archivos incrementalmente por hash de contenido. Usa ChromaD
 - Hash mismatch → `RE_SYNC` — no permitir nuevas escrituras
 
 ## Referencias
-- `VCORE_ARCHITECTURE_v0_4.md` — NISABA §4
+- `VCORE_ARCHITECTURE_v0_4.md` — Retriever §4
 - `scripts/diagnostics.py` — herramienta CLI de diagnóstico

@@ -6,7 +6,7 @@ Contexto de política compartido: un solo `Gate` para todo el proceso.
 Por qué existe
 --------------
 `Gate` se instanciaba por separado en `api/files_api.py`, `api/shell_api.py`,
-`api/search_api.py`, `agents/ENKI/enki.py` y `agents/NISABA/nisaba.py`. Consecuencia
+`api/search_api.py`, `agents/Planner/planner.py` y `agents/Retriever/retriever.py`. Consecuencia
 real: `POST /system/reload-gate` recargaba reglas en una instancia y las demás
 seguían con la política vieja en memoria — el endpoint "funcionaba" y no cambiaba
 nada del comportamiento efectivo.

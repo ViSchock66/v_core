@@ -1,10 +1,10 @@
 """
-agents/SHAMASH/shamash.py
+agents/Curator/curator.py
 =========================
-SHAMASH v3 — Capa de Contexto para V-CORE. Motor de memoria delegado a NEM0.
+Curator v3 — Capa de Contexto para V-CORE. Motor de memoria delegado a NEM0.
 
 La persistencia (store/query/historial) la maneja system/nem0.
-SHAMASH se queda con lo que solo él puede hacer: inyectar contexto del proyecto.
+Curator se queda con lo que solo él puede hacer: inyectar contexto del proyecto.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel
 
-# ── Motor de memoria SHAMASH ────────────────────────────────────
-from agents.SHAMASH.memory import nem0
+# ── Motor de memoria Curator ────────────────────────────────────
+from agents.Curator.memory import nem0
 
 # =============================================================================
 # SCHEMAS
@@ -60,7 +60,7 @@ WORKSPACE_DIR = BASE_DIR / "workspace"
 
 OLLAMA_HOST        = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 EMBED_MODEL        = "nomic-embed-text"   # ya disponible en Ollama
-CHROMA_COLLECTION  = "shamash_memory"
+CHROMA_COLLECTION  = "curator_memory"
 
 DEFAULT_TOKEN_BUDGET_TOTAL = 32768
 
@@ -68,17 +68,17 @@ DEFAULT_TOKEN_BUDGET_TOTAL = 32768
 from api.embed import embed
 
 # =============================================================================
-# SHAMASH v2
+# Curator v2
 # =============================================================================
 
-class SHAMASH:
+class Curator:
     """
     Context Manager de V-CORE.
     Memoria delegada a NEM0 (system/nem0). Solo lectura de archivos.
     """
 
     def __init__(self):
-        self.agent_name = "SHAMASH"
+        self.agent_name = "Curator"
 
     # ── API de memoria (delegada a NEM0) ─────────────────────────
 
@@ -97,7 +97,7 @@ class SHAMASH:
         ]
 
     def record_lesson(self, lesson: str, task_id: str = "") -> str:
-        """Compatibilidad con ENLIL agent loop. Delega en NEM0."""
+        """Compatibilidad con Orchestrator agent loop. Delega en NEM0."""
         return self.store(content=lesson, metadata={"outcome": "lesson", "task_id": task_id})
 
     def record_quality(self, content: str, quality_score: float = 0.0,
@@ -114,7 +114,7 @@ class SHAMASH:
         return [{"id": e.id, "content": e.content, "metadata": e.metadata,
                  "created_at": e.created_at} for e in entries]
 
-    # ── Contexto del proyecto (propio de SHAMASH) ─────────────────
+    # ── Contexto del proyecto (propio de Curator) ─────────────────
 
     def inject_project_context(self) -> ProjectContext:
         """
@@ -302,7 +302,7 @@ class SHAMASH:
                 if entry.name.startswith(".") or entry.name in ("__pycache__", ".venv", "chroma_db"):
                     continue
                 if entry.is_dir():
-                    total += SHAMASH._dir_size(entry.path, extensions)
+                    total += Curator._dir_size(entry.path, extensions)
                 elif entry.is_file():
                     if Path(entry.name).suffix.lower() in extensions:
                         total += entry.stat().st_size

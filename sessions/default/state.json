@@ -2,8 +2,8 @@
   "version": "1.5.0",
   "session_id": "default",
   "proyecto_activo": "V-CORE",
-  "agentes_disponibles": ["ENLIL", "SHAMASH", "ENKI", "NISABA"],
-  "enlil_backend": "nvidia",
+  "agentes_disponibles": ["Orchestrator", "Curator", "Planner", "Retriever"],
+  "orchestrator_backend": "nvidia",
   "fecha_actualizacion": "2026-09-23T00:00:00Z",
   "_nota": "Template de sesion. La version autoritativa vive en VCORE_STATE.json leida por api/version.py; este campo solo refleja el valor al momento de la ultima sincronizacion del template."
 }

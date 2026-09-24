@@ -19,11 +19,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from agents.ENLIL.enlil import ENLIL  # noqa: E402
+from agents.Orchestrator.orchestrator import Orchestrator  # noqa: E402
 from api.approval_broker import get_broker  # noqa: E402
 
 
-async def escenario(agente: ENLIL, tool: str, params: dict, label: str,
+async def escenario(agente: Orchestrator, tool: str, params: dict, label: str,
                     resolver=None, timeout_s: float = 3.0) -> dict:
     """Ejecuta un dispatch completo y devuelve qué pasó.
 
@@ -67,7 +67,7 @@ async def escenario(agente: ENLIL, tool: str, params: dict, label: str,
 
 
 async def main() -> int:
-    agente = ENLIL()
+    agente = Orchestrator()
     await agente._ensure_mcp()
     broker = get_broker()
 

@@ -174,7 +174,7 @@ def init_db(db_path: str = DB_PATH) -> None:
     _add_column_if_missing(cur, "agent_memory", "task_id",          "TEXT")
     _add_column_if_missing(cur, "agent_memory", "quality_score",    "REAL")
     _add_column_if_missing(cur, "agent_memory", "user_feedback",    "TEXT")
-    # FIX F-10: columnas que shamash.py escribe/lee y faltaban en el schema
+    # FIX F-10: columnas que curator.py escribe/lee y faltaban en el schema
     # tier: ciclo de vida (episodic -> working -> distilled)
     # usage_count: cuantas veces fue inyectada al contexto (prioridad en _get_lessons_by_tier)
     # promoted_from_id: referencia a la leccion episodica de origen (opcional)

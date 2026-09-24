@@ -34,7 +34,7 @@ Genera grafo JSON con:
 
 **Reglas de validación:**
 - DAG (sin ciclos)
-- Primer nodo = SHAMASH.context
+- Primer nodo = Curator.context
 - Un solo `ask_approval=true`
 - Cada nodo tiene `token_budget` definido
 - Todos los `id` en `next` existen
@@ -47,8 +47,8 @@ Schema gate final: `DiffProposal` debe ser válido antes de exponer al usuario.
 - Nivel B: requiere aprobación humana (write_scoped, always_b)
 
 ## Responsabilidades
-- ENLIL es el **único punto de entrada** del usuario
-- ENLIL es el **único agente que delega**
+- Orchestrator es el **único punto de entrada** del usuario
+- Orchestrator es el **único agente que delega**
 - Los agentes no se llaman entre sí en cadena
 
 ## Tokens

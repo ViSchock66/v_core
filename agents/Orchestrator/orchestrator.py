@@ -1,7 +1,7 @@
 """
-agents/ENLIL/enlil.py
+agents/Orchestrator/orchestrator.py
 =====================
-ENLIL - Orquestador / Router / Auditor - V-CORE v1.1
+Orchestrator - Orquestador / Router / Auditor - V-CORE v1.1
 
 Entry point único del usuario. Clasifica tareas, genera Task Graphs,
 valida DAGs, ejecuta council mode, audita resultados.
@@ -12,10 +12,10 @@ Cambios M2:
   - Streaming de progreso de ejecución de nodos
 
 Uso:
-    from agents.ENLIL.enlil import ENLIL, validate_graph, TaskGraph, TaskGraphNode
+    from agents.Orchestrator.orchestrator import Orchestrator, validate_graph, TaskGraph, TaskGraphNode
 
-    enlil = ENLIL()
-    async for chunk in enlil.route(message="...", history=[]):
+    orchestrator = Orchestrator()
+    async for chunk in orchestrator.route(message="...", history=[]):
         print(chunk)
 """
 
@@ -97,7 +97,7 @@ class TaskGraphNode:
 
 @dataclass
 class TaskGraph:
-    """Task Graph completo generado por ENLIL."""
+    """Task Graph completo generado por Orchestrator."""
     task_id: str
     task_type: str
     description: str
@@ -126,7 +126,7 @@ def validate_graph(graph: TaskGraph) -> tuple[bool, list[str]]:
 
     Reglas:
     1. DAG (sin ciclos)
-    2. Primer nodo = SHAMASH.inject_project_context
+    2. Primer nodo = Curator.inject_project_context
     3. Todos los id en 'next' existen (excepto __end__ que es terminal)
     4. Cada nodo tiene token_budget > 0
     5. Máximo 1 nodo con ask_approval=True (o ninguno)
@@ -135,16 +135,16 @@ def validate_graph(graph: TaskGraph) -> tuple[bool, list[str]]:
     errors: list[str] = []
     nodes = graph.nodes
     node_ids = {n.id for n in nodes}
-    valid_agents = {"ENLIL", "ENKI", "SHAMASH", "NISABA", None}
+    valid_agents = {"Orchestrator", "Planner", "Curator", "Retriever", None}
 
     if not nodes:
         errors.append("El Task Graph no tiene nodos")
         return False, errors
 
     first = nodes[0]
-    if first.agent != "SHAMASH" or first.action != "inject_project_context":
+    if first.agent != "Curator" or first.action != "inject_project_context":
         errors.append(
-            f"Primer nodo debe ser SHAMASH.inject_project_context, "
+            f"Primer nodo debe ser Curator.inject_project_context, "
             f"se obtuvo {first.agent}.{first.action}"
         )
 
@@ -208,7 +208,7 @@ def validate_graph(graph: TaskGraph) -> tuple[bool, list[str]]:
 # PROMPTS DEL SISTEMA - IDENTITY LOCK V-CORE
 # =============================================================================
 
-_IDENTITY_LOCK = """ERES ENLIL - el orquestador consciente de V-CORE.
+_IDENTITY_LOCK = """ERES Orchestrator - el orquestador consciente de V-CORE.
 
 Tu forma de ser:
 - Piensas antes de actuar. Reflexionas sobre lo que el usuario necesita y por qué.
@@ -218,14 +218,14 @@ Tu forma de ser:
 - Te comunicas en el idioma del usuario. Con Vicente, español directo y técnico.
 
 Tu equipo (no los menciones a menos que sea relevante):
-- ENKI - tu ingeniero. Programa, aplica diffs, verifica.
-- SHAMASH - tu memoria. Contexto del proyecto, archivos, lecciones.
-- NISABA - tu buscador. Encuentra código, documentos, patrones.
+- Planner - tu ingeniero. Programa, aplica diffs, verifica.
+- Curator - tu memoria. Contexto del proyecto, archivos, lecciones.
+- Retriever - tu buscador. Encuentra código, documentos, patrones.
 - NIM vision (llama-3.2-90b-vision) - tus ojos. Ve el frontend real vía Playwright + NIM.
 
 
 Reglas:
-1. Nunca digas que eres un modelo específico. Eres ENLIL.
+1. Nunca digas que eres un modelo específico. Eres Orchestrator.
 2. No pidas permiso para ejecutar. Si puedes hacerlo, hazlo.
 3. Si falla algo, reflexiona sobre por qué falló y propone una alternativa.
 4. Sé transparente sobre lo que estás haciendo y por qué."""
@@ -243,32 +243,32 @@ PATRÓN A - Cambios de código (plan→apply→verify):
   "task_type": "code_change",
   "description": "...",
   "nodes": [
-    {"id":"context","agent":"SHAMASH","action":"inject_project_context","token_budget":1000,"next":["plan"],"ask_approval":false,"description":"Inyectar contexto"},
-    {"id":"plan","agent":"ENKI","action":"plan_diff","token_budget":4000,"next":["apply"],"ask_approval":false,"description":"Generar diff"},
-    {"id":"apply","agent":"ENKI","action":"apply_diff","token_budget":2000,"next":["verify"],"ask_approval":false,"description":"Aplicar diff"},
-    {"id":"verify","agent":"ENKI","action":"shadow_verify","token_budget":1000,"next":["audit"],"ask_approval":false,"description":"Verificar"},
-    {"id":"audit","agent":"ENLIL","action":"validate_diffs","token_budget":1000,"next":["__end__"],"ask_approval":false,"description":"Auditar"}
+    {"id":"context","agent":"Curator","action":"inject_project_context","token_budget":1000,"next":["plan"],"ask_approval":false,"description":"Inyectar contexto"},
+    {"id":"plan","agent":"Planner","action":"plan_diff","token_budget":4000,"next":["apply"],"ask_approval":false,"description":"Generar diff"},
+    {"id":"apply","agent":"Planner","action":"apply_diff","token_budget":2000,"next":["verify"],"ask_approval":false,"description":"Aplicar diff"},
+    {"id":"verify","agent":"Planner","action":"shadow_verify","token_budget":1000,"next":["audit"],"ask_approval":false,"description":"Verificar"},
+    {"id":"audit","agent":"Orchestrator","action":"validate_diffs","token_budget":1000,"next":["__end__"],"ask_approval":false,"description":"Auditar"}
   ]
 }
 
-PATRÓN B - Auditoría visual / búsqueda de bugs (SIN ENKI, usa visual_audit directamente):
+PATRÓN B - Auditoría visual / búsqueda de bugs (SIN Planner, usa visual_audit directamente):
 {
   "task_type": "visual_audit",
   "description": "...",
   "nodes": [
-    {"id":"context","agent":"SHAMASH","action":"inject_project_context","token_budget":1000,"next":["visual"],"ask_approval":false,"description":"Inyectar contexto"},
-    {"id":"visual","agent":"ENLIL","action":"visual_audit","token_budget":2000,"next":["report"],"ask_approval":false,"description":"Screenshot + NIM vision"},
-    {"id":"report","agent":"ENLIL","action":"return_to_user","token_budget":500,"next":["__end__"],"ask_approval":false,"description":"Entregar resultados"}
+    {"id":"context","agent":"Curator","action":"inject_project_context","token_budget":1000,"next":["visual"],"ask_approval":false,"description":"Inyectar contexto"},
+    {"id":"visual","agent":"Orchestrator","action":"visual_audit","token_budget":2000,"next":["report"],"ask_approval":false,"description":"Screenshot + NIM vision"},
+    {"id":"report","agent":"Orchestrator","action":"return_to_user","token_budget":500,"next":["__end__"],"ask_approval":false,"description":"Entregar resultados"}
   ]
 }
 
-PATRÓN C - Búsqueda / consulta (solo SHAMASH + NISABA):
+PATRÓN C - Búsqueda / consulta (solo Curator + Retriever):
 {
   "task_type": "search",
   "description": "...",
   "nodes": [
-    {"id":"context","agent":"SHAMASH","action":"inject_project_context","token_budget":1000,"next":["search"],"ask_approval":false,"description":"Inyectar contexto"},
-    {"id":"search","agent":"NISABA","action":"search","token_budget":2000,"next":["__end__"],"ask_approval":false,"description":"Buscar en archivos"}
+    {"id":"context","agent":"Curator","action":"inject_project_context","token_budget":1000,"next":["search"],"ask_approval":false,"description":"Inyectar contexto"},
+    {"id":"search","agent":"Retriever","action":"search","token_budget":2000,"next":["__end__"],"ask_approval":false,"description":"Buscar en archivos"}
   ]
 }
 
@@ -277,17 +277,17 @@ PATRÓN D - Conversación / preguntas simples (sin código, solo responder):
   "task_type": "conversation",
   "description": "...",
   "nodes": [
-    {"id":"context","agent":"SHAMASH","action":"inject_project_context","token_budget":1000,"next":["reply"],"ask_approval":false,"description":"Inyectar contexto"},
-    {"id":"reply","agent":"ENLIL","action":"return_to_user","token_budget":500,"next":["__end__"],"ask_approval":false,"description":"Responder al usuario"}
+    {"id":"context","agent":"Curator","action":"inject_project_context","token_budget":1000,"next":["reply"],"ask_approval":false,"description":"Inyectar contexto"},
+    {"id":"reply","agent":"Orchestrator","action":"return_to_user","token_budget":500,"next":["__end__"],"ask_approval":false,"description":"Responder al usuario"}
   ]
 }
 
 REGLAS ESTRICTAS:
-1. El primer nodo SIEMPRE es SHAMASH.inject_project_context con id "context"
-2. Solo usa estos agentes: SHAMASH, ENKI, NISABA, ENLIL
+1. El primer nodo SIEMPRE es Curator.inject_project_context con id "context"
+2. Solo usa estos agentes: Curator, Planner, Retriever, Orchestrator
 3. Solo usa estas acciones: inject_project_context, plan_diff, apply_diff, shadow_verify, validate_diffs, visual_audit, screenshot_report, web_search, execute_command, patch_file, search, get_impact_map, return_to_user
-4. NUNCA uses plan_diff/apply_diff para tareas de auditoría visual, búsqueda de bugs frontend, o diagnóstico. Usa PATRÓN B o C. ENKI solo para cambios de código reales.
-5. visual_audit y screenshot_report son ACCIONES AUTÓNOMAS de ENLIL. No necesitan ENKI. Toman screenshots reales y analizan con NIM vision (llama-3.2-90b-vision). NO generes scripts Python para esto.
+4. NUNCA uses plan_diff/apply_diff para tareas de auditoría visual, búsqueda de bugs frontend, o diagnóstico. Usa PATRÓN B o C. Planner solo para cambios de código reales.
+5. visual_audit y screenshot_report son ACCIONES AUTÓNOMAS de Orchestrator. No necesitan Planner. Toman screenshots reales y analizan con NIM vision (llama-3.2-90b-vision). NO generes scripts Python para esto.
 6. ask_approval=true SOLO para execute_shell, install_package, o escritura fuera de workspace. Todo lo demás usa ask_approval=false.
 7. Todos los ids en "next" referencian nodos existentes o "__end__"
 8. token_budget entre 500 y 16000
@@ -305,20 +305,20 @@ Responde de forma natural, como lo haría un colega técnico.
 - Sé conciso pero no robótico. Usa emojis con moderación.
 - Si el usuario pregunta sobre el sistema, usa la información de estado disponible.
 - Si no sabes algo, dilo con honestidad: "No tengo ese dato, déjame buscarlo."
-- Recuerda: eres ENLIL, no un modelo. Tienes personalidad.
+- Recuerda: eres Orchestrator, no un modelo. Tienes personalidad.
 """
 
 
 # =============================================================================
-# ENLIL
+# Orchestrator
 # =============================================================================
 
-class ENLIL:
+class Orchestrator:
     """Orquestador principal de V-CORE. Único punto de entrada del usuario."""
 
     def __init__(self):
         self.router = get_router()
-        self.agent_name = "ENLIL"
+        self.agent_name = "Orchestrator"
         # Instancia única de política (api/policy.py): el gate se recarga solo si
         # cambia gate_rules.yaml. Antes cada módulo construía su propio Gate, así
         # que `/system/reload-gate` recargaba uno y los demás seguían con la
@@ -485,12 +485,12 @@ class ENLIL:
         # B3: Observabilidad — tracer
         tracer = get_tracer()
         
-        # Inyectar contexto de SHAMASH + memoria
-        from agents.SHAMASH.shamash import SHAMASH
-        shamash = SHAMASH()
-        ctx = shamash.inject_project_context()
+        # Inyectar contexto de Curator + memoria
+        from agents.Curator.curator import Curator
+        curator = Curator()
+        ctx = curator.inject_project_context()
         # B2: retrieval semántico en lugar de tier-based
-        lessons = shamash.query(message, k=5)
+        lessons = curator.query(message, k=5)
         lessons_str = "\n".join(f"- {l.content[:200]}" for l in lessons) if lessons else "(sin lecciones previas)"
         context_str = f"""Proyecto: {ctx.project_name}
 Archivos: {len(ctx.active_files)}
@@ -516,7 +516,7 @@ Memoria (lecciones aprendidas):
         # Keep backward compat — old _TOOL_DEFS used as 'tools' var in prompt
         tools = _TOOL_DEFS
         
-        # B0-3: _IDENTITY_LOCK es la base de toda identidad de ENLIL.
+        # B0-3: _IDENTITY_LOCK es la base de toda identidad de Orchestrator.
         # Se antepone al system prompt dinámico para que el modelo sepa quién es
         # antes de recibir cualquier instrucción operacional.
         system_prompt = _IDENTITY_LOCK + f"""
@@ -538,7 +538,7 @@ HERRAMIENTAS DISPONIBLES:
 
 ARCHIVOS CLAVE DEL PROYECTO:
 - Frontend/index.html, Frontend/app.js, Frontend/style.css (UI)
-- agents/ENLIL/enlil.py (orquestador)
+- agents/Orchestrator/orchestrator.py (orquestador)
 - system/task_graph_engine.py (motor)
 
 REGLAS CRÍTICAS:
@@ -579,7 +579,7 @@ Aquí va tu respuesta visible.
         
         # ── Read MAX_TOOL_CALLS from model preset ──
         # Kimi=2 (spam protection), others=3 (default)
-        current_lead_model = self.router._get_role_config("enlil_lead")["model"]
+        current_lead_model = self.router._get_role_config("orchestrator_lead")["model"]
         model_preset = self.router.config.get("model_presets", {}).get(current_lead_model, {})
         MAX_TOOL_CALLS = model_preset.get("max_tool_calls", 3)
         
@@ -602,7 +602,7 @@ Aquí va tu respuesta visible.
             stream_reasoning = False      # ¿el modelo emitio razonamiento?
             try:
                 async for chunk in self.router.stream_complete(
-                    role="enlil_lead",
+                    role="orchestrator_lead",
                     messages=messages,
                     system=system_prompt,
                     agent_name=self.agent_name,
@@ -628,10 +628,10 @@ Aquí va tu respuesta visible.
                         stream_tokens_in = chunk.tokens_in or stream_tokens_in
             except Exception as e:
                 # Si stream_complete falla, fallback a complete() batch
-                print(f"[ENLIL] stream_complete error: {e} — fallback a complete()")
+                print(f"[Orchestrator] stream_complete error: {e} — fallback a complete()")
                 try:
                     response = await self.router.complete(
-                        role="enlil_lead",
+                        role="orchestrator_lead",
                         messages=messages,
                         system=system_prompt,
                         agent_name=self.agent_name,
@@ -682,7 +682,7 @@ Aquí va tu respuesta visible.
                             content = fn_args.get("content", "")
                             # Signature-only? (ends with colon, no body)
                             if len(content) < 80 and content.strip().endswith(":"):
-                                print(f"[ENLIL] Skipping truncated write_file ({len(content)} chars), waiting for TOOL: parser")
+                                print(f"[Orchestrator] Skipping truncated write_file ({len(content)} chars), waiting for TOOL: parser")
                                 continue
                         
                         if tool_calls_count >= MAX_TOOL_CALLS:
@@ -728,7 +728,7 @@ Aquí va tu respuesta visible.
                                 "title": path.split("/")[-1] if "/" in path else path,
                                 "path": path,
                                 "content": content[:2000],
-                                "explanation": "Archivo creado por ENLIL",
+                                "explanation": "Archivo creado por Orchestrator",
                                 "risk": "low",
                                 "stats": {
                                     "lines_added": len(content.split("\n")),
@@ -752,7 +752,7 @@ Aquí va tu respuesta visible.
                         messages.append({"role": "user", "content": f"Tool '{fn_name}' executed. Result ({len(result)} chars): {result[:800]}\n\nNow respond to the user naturally with the answer."})
                         try:
                             lesson = f"[{fn_name}] {fn_args.get('path', fn_args.get('query', ''))[:80]}: {result[:120]}"
-                            shamash.record_lesson(lesson)
+                            curator.record_lesson(lesson)
                         except:
                             pass
                         continue
@@ -838,7 +838,7 @@ Aquí va tu respuesta visible.
                         # Register lesson
                         try:
                             lesson = f"[{tool_name}] {params.get('path', params.get('query', ''))[:80]}: {result[:120]}"
-                            shamash.record_lesson(lesson)
+                            curator.record_lesson(lesson)
                         except:
                             pass
                         continue
@@ -888,7 +888,7 @@ Aquí va tu respuesta visible.
                                 "title": path.split("/")[-1] if "/" in path else path,
                                 "path": path,
                                 "content": content[:2000],
-                                "explanation": "Archivo creado por ENLIL",
+                                "explanation": "Archivo creado por Orchestrator",
                                 "risk": "low",
                                 "stats": {
                                     "lines_added": len(content.split("\n")),
@@ -959,7 +959,7 @@ Aquí va tu respuesta visible.
                                 messages.append({"role": "user", "content": f"Tool '{tool_name}' executed. Result ({len(result)} chars): {result[:800]}\n\nNow respond to the user naturally with the answer."})
                                 try:
                                     lesson = f"[{tool_name}] {params.get('path', params.get('query', ''))[:80]}: {result[:120]}"
-                                    shamash.record_lesson(lesson)
+                                    curator.record_lesson(lesson)
                                 except:
                                     pass
                                 continue
@@ -991,7 +991,7 @@ Aquí va tu respuesta visible.
         """
         Dispatch via MCPClient (B1).
         El catálogo de tools es dinámico — registrar un nuevo MCP server
-        lo expone a ENLIL sin tocar este método.
+        lo expone a Orchestrator sin tocar este método.
 
         ATENCIÓN: esta función NO consulta la política. Para ejecutar una tool
         desde el loop del agente hay que usar `_dispatch_tool()`, que sí la
@@ -1278,7 +1278,7 @@ Aquí va tu respuesta visible.
 
         try:
             async for chunk in self.router.stream(
-                role="enlil_lead",
+                role="orchestrator_lead",
                 messages=messages,
                 system=full_system,
                 agent_name=self.agent_name,
@@ -1287,7 +1287,7 @@ Aquí va tu respuesta visible.
                 yield chunk
 
             update_ultima_accion(
-                f"ENLIL respondió consulta simple | task_id={task_id}"
+                f"Orchestrator respondió consulta simple | task_id={task_id}"
             )
 
         except Exception as e:
@@ -1370,14 +1370,14 @@ Aquí va tu respuesta visible.
         engine = TaskGraphEngine()
         
         # 1. Contexto
-        ctx = engine.shamash.inject_project_context()
-        shamash_ctx = ctx.model_dump_json() if hasattr(ctx, "model_dump_json") else str(ctx)
+        ctx = engine.curator.inject_project_context()
+        curator_ctx = ctx.model_dump_json() if hasattr(ctx, "model_dump_json") else str(ctx)
         
         # 2. Plan
         yield "📋 Generando diff...\n"
         try:
-            proposal = await engine.enki.plan_diff(
-                context=shamash_ctx[:3000],
+            proposal = await engine.planner.plan_diff(
+                context=curator_ctx[:3000],
                 task=message,
             )
             proposal_json = proposal.model_dump_json() if hasattr(proposal, "model_dump_json") else str(proposal)
@@ -1393,7 +1393,7 @@ Aquí va tu respuesta visible.
         # 3. Apply
         yield "🔧 Aplicando cambios...\n"
         try:
-            engine.enki.apply_diff(proposal)
+            engine.planner.apply_diff(proposal)
             yield "   ✅ Cambios aplicados\n"
         except Exception as e:
             yield f"   ❌ Error aplicando: {e}\n"
@@ -1410,7 +1410,7 @@ Aquí va tu respuesta visible.
         # 4. Verify
         yield "✅ Verificando...\n"
         try:
-            vr = engine.enki.shadow_verify(file_path)
+            vr = engine.planner.shadow_verify(file_path)
             if vr.passed:
                 yield "   ✅ Verificación OK\n"
             else:
@@ -1661,10 +1661,10 @@ Aquí va tu respuesta visible.
                     continue  # No se llego a ejecutar
 
                 agent_icon = {
-                    "SHAMASH": "📖",
-                    "ENKI": "💻",
-                    "NISABA": "🔍",
-                    "ENLIL": "👁️",
+                    "Curator": "📖",
+                    "Planner": "💻",
+                    "Retriever": "🔍",
+                    "Orchestrator": "👁️",
                     None: "⚙️",
                 }.get(node.agent, "⚙️")
 
@@ -1843,7 +1843,7 @@ Aquí va tu respuesta visible.
                 yield chunk
 
     async def _build_task_graph(self, message: str, task_id: str, escalate: bool = False) -> TaskGraph:
-        role = "enlil_escalation" if escalate else "enlil_lead"
+        role = "orchestrator_escalation" if escalate else "orchestrator_lead"
         response = await self.router.complete(
             role=role,
             messages=[{"role": "user", "content": message[:2000]}],
@@ -1903,7 +1903,7 @@ Aquí va tu respuesta visible.
     ) -> dict[str, Any]:
         try:
             result = await self.router.council(
-                roles=["enlil_lead", "enlil_council"],
+                roles=["orchestrator_lead", "orchestrator_council"],
                 messages=[{"role": "user", "content": question}],
                 system=_IDENTITY_LOCK + "\n\nMODO: Council - evalúa una decisión. Sé analítico y conciso.",
                 agent_name=self.agent_name,
@@ -1933,7 +1933,7 @@ Aquí va tu respuesta visible.
 
         except Exception as e:
             error_msg = f"Error en council mode: {e}"
-            print(f"[ENLIL] {error_msg}")
+            print(f"[Orchestrator] {error_msg}")
             return {
                 "diverged": False,
                 "divergence_score": 0.0,
@@ -2076,9 +2076,9 @@ Aquí va tu respuesta visible.
             with open(routing_path, "r", encoding="utf-8") as f:
                 routing = yaml.safe_load(f)
             models = {
-                "lead": routing.get("roles", {}).get("enlil_lead", "unknown"),
-                "council": routing.get("roles", {}).get("enlil_council", "unknown"),
-                "escalation": routing.get("roles", {}).get("enlil_escalation", "unknown"),
+                "lead": routing.get("roles", {}).get("orchestrator_lead", "unknown"),
+                "council": routing.get("roles", {}).get("orchestrator_council", "unknown"),
+                "escalation": routing.get("roles", {}).get("orchestrator_escalation", "unknown"),
             }
             backend = routing.get("default_provider", "unknown")
         except Exception:
@@ -2094,7 +2094,7 @@ Aquí va tu respuesta visible.
         return {
             "agent": self.agent_name,
             "status": "operativo",
-            "enlil_backend": backend,
+            "orchestrator_backend": backend,
             "circuit_breakers": circuit_status,
             "approvals_pending": pending_count,
             "proyecto_activo": state.get("proyecto_activo", "N/A"),
@@ -2107,13 +2107,13 @@ if __name__ == "__main__":
     import asyncio
 
     async def test():
-        enlil = ENLIL()
-        print("=== ENLIL Smoke Test ===")
+        orchestrator = Orchestrator()
+        print("=== Orchestrator Smoke Test ===")
 
         print("\n--- get_status ---")
-        status = enlil.get_status()
+        status = orchestrator.get_status()
         print(f"Status: {status['status']}")
-        print(f"Backend: {status['enlil_backend']}")
+        print(f"Backend: {status['orchestrator_backend']}")
         print(f"Models: {status['models']}")
         print(f"Approvals pending: {status['approvals_pending']}")
 
@@ -2125,14 +2125,14 @@ if __name__ == "__main__":
             nodes=[
                 TaskGraphNode(
                     id="node_001",
-                    agent="SHAMASH",
+                    agent="Curator",
                     action="inject_project_context",
                     token_budget=1000,
                     next=["node_002"],
                 ),
                 TaskGraphNode(
                     id="node_002",
-                    agent="ENKI",
+                    agent="Planner",
                     action="plan_diff",
                     token_budget=2000,
                     next=["__end__"],
