@@ -1,0 +1,53 @@
+# --- Secretos y credenciales ----------------------------------------------
+.env
+sessions/*
+!sessions/default/
+!sessions/default/.env.keys.example
+sessions/_archive/
+
+# --- Datos locales ---------------------------------------------------------
+vcore.db
+vcore.db-wal
+vcore.db-shm
+chroma_db/
+# workspace/uploads/ son los adjuntos que sube el usuario en cada sesión:
+# salida de runtime, no fuente. OJO: "workspace/*" solo cubre el primer
+# nivel, así que NO alcanzaba a workspace/uploads/default/ y esos archivos
+# seguían versionados (incluido un notas_proyecto.txt con un prompt
+# injection de prueba). El patrón recursivo es el correcto.
+workspace/**
+!workspace/.gitkeep
+
+# --- Logs generados en runtime ---------------------------------------------
+# Los escriben system/observability.py y system/proactive_agent.py en cada
+# ejecución. No versionar: son salida, no fuente.
+traces.jsonl
+proactive_log.jsonl
+*.log
+
+# --- Artefactos de auditoría -----------------------------------------------
+.audit_shots/
+scripts/visual_audits/
+
+# --- Entornos y cachés de Python -------------------------------------------
+.venv/
+.venv_test/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node / tooling --------------------------------------------------------
+node_modules/
+.DS_Store
+Thumbs.db
+
+# --- Excluidos del export público (preservados en el repo privado) --------
+# web_dist/ es build regenerable desde web/ (decision PM §4.2).
+# docs/_archive/ conserva historial y contexto personal fuera del repo publico
+# (decision PM §4.3).
+web_dist/
+docs/_archive/

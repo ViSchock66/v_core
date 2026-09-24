@@ -1,0 +1,180 @@
+# gate_rules.yaml
+# Reglas del Gate de Ejecucion V-CORE
+#
+# Cada tool se clasifica en una categoria. El Gate decide el nivel
+# final combinando categoria + (si aplica) si el path objetivo
+# esta dentro de workspace_dir.
+#
+# Categorias:
+#   read_only    -> siempre Nivel A
+#   write_scoped -> Nivel A si el path esta dentro de workspace_dir,
+#                    Nivel B si esta fuera
+#   always_b     -> siempre Nivel B, sin excepcion (ej: shell arbitrario)
+
+# Raíz de trabajo efectiva del agente.
+#
+# IMPORTANTE: esto debe coincidir con el directorio contra el que las tools
+# resuelven los paths relativos. `vcore_fs_mcp._resolve()` usa `BASE_DIR` (la
+# raíz del repo), así que la política también. Cuando no coincidían, el gate
+# resolvía `api/main.py` como `workspace/api/main.py` (dentro del workspace,
+# permitido) mientras el handler escribía en `api/main.py` del repo: la política
+# aprobaba una acción y el tool ejecutaba otra. Ese desalineamiento es un
+# agujero real, no un detalle cosmético.
+#
+# `workspace/` sigue siendo el directorio para artefactos y adjuntos; el
+# aislamiento fuerte por sesión llega con los worktrees (ver docs/ANALISIS_REFACTOR_FRONTEND.md).
+# ${VCORE_ROOT} y ${VCORE_DATA} se resuelven en runtime (gate.py):
+# VCORE_ROOT cae a la raíz del repo si la variable no existe; VCORE_DATA
+# sin definir deja la entrada fuera (instalación sin disco de datos).
+workspace_dir: "${VCORE_ROOT}"
+
+# Directorios raiz permitidos (deben coincidir con mcp_config.json)
+allowed_roots:
+  - "${VCORE_ROOT}"
+  - "${VCORE_DATA}"
+
+# --- v2: tools cuyo riesgo está en un ARGUMENTO, no en un path ---
+# El motor no evalúa estas tools por categoría: tokeniza el comando y lo compara
+# contra `command_allowlist` (ver system/policy_commands.py).
+command_params:
+  execute_command: command
+  background_task: command
+
+# Precedencia en la evaluación de comandos: deny > ask > permit.
+# `*` = cualquier invocación del binario. Una lista = subcomandos permitidos.
+command_allowlist:
+  # Inspección de archivos y texto
+  ls: "*"
+  dir: "*"
+  cat: "*"
+  type: "*"
+  head: "*"
+  tail: "*"
+  wc: "*"
+  file: "*"
+  stat: "*"
+  sort: "*"
+  uniq: "*"
+  cut: "*"
+  tr: "*"
+  echo: "*"
+  pwd: "*"
+  whoami: "*"
+  hostname: "*"
+  date: "*"
+  which: "*"
+  where: "*"
+  # Búsqueda (las que usa el propio agente y las clásicas)
+  grep: "*"
+  rg: "*"
+  find: "*"
+  fd: "*"
+  select-string: "*"
+  get-command: "*"
+  # Git: solo lectura de estado e historial. `push`, `reset`, `clean` y
+  # `checkout` quedan fuera a propósito: piden aprobación.
+  git: ["status", "diff", "log", "show", "branch", "remote", "rev-parse",
+        "describe", "blame", "ls-files", "stash list", "config --get",
+        "add", "commit", "checkout -b", "switch"]
+  # Gestión de procesos propia de Windows (para diagnóstico)
+  tasklist: "*"
+  # Intérpretes: solo en formas verificables. `-c` y `-e` disparan
+  # `command.interpreter_inline_code` (ask) porque el contenido del string no se
+  # puede validar sin ejecutarlo.
+  python: ["-m pytest", "-m py_compile", "-m compileall", "--version", "-V"]
+  python3: ["-m pytest", "-m py_compile", "-m compileall", "--version", "-V"]
+  py: ["-m pytest", "-m py_compile", "--version", "-V"]
+  pytest: "*"
+  node: ["--version", "-v", "--check"]
+  npm: ["--version", "test", "run build", "run lint", "run test", "run typecheck"]
+  npx: ["--version", "tsc"]
+
+# --- v2: perímetro de ejecución ---
+# En modo sandbox la MISMA política auto-aprueba dentro del perímetro: el daño
+# posible queda acotado a un worktree desechable. `enabled: false` desactiva esa
+# relajación sin cambiar ninguna regla.
+perimeter:
+  enabled: true
+  network: deny
+  limits:
+    timeout_s: 120
+    max_output_bytes: 1048576
+
+# --- Catálogo COMPLETO de tools del agente ---
+# Estaba incompleto: el YAML conocía `edit_file`, `execute_shell` y
+# `read_text_file`, pero el agente invoca `patch_file`, `list_files`,
+# `search_code`, `execute_command`, `background_task` y `web_search`. Por el
+# fail-safe esas 6 caían en "requiere aprobación", lo que habría dejado al
+# agente pidiendo permiso hasta para listar un directorio: fricción inútil que
+# entrena al usuario a aprobar sin leer.
+tools:
+  # --- Lectura: siempre Nivel A ---
+  route: read_only
+  read_file: read_only
+  read_text_file: read_only
+  read_media_file: read_only
+  read_multiple_files: read_only
+  list_directory: read_only
+  list_directory_with_sizes: read_only
+  list_files: read_only
+  directory_tree: read_only
+  search_files: read_only
+  search_code: read_only
+  get_file_info: read_only
+  list_allowed_directories: read_only
+
+  # --- Escritura: depende del path ---
+  create_directory: write_scoped
+  write_file: write_scoped
+  patch_file: write_scoped
+  edit_file: write_scoped
+  move_file: write_scoped
+
+  # --- Shell / instalación: siempre Nivel B ---
+  execute_shell: always_b
+  install_package: always_b
+  web_search: always_b
+  visual_audit: always_b
+
+# Parametros donde puede venir el path objetivo, segun la tool.
+# move_file usa dos (origen y destino) -- se evaluan ambos.
+path_params:
+  read_file: [path]
+  read_text_file: [path]
+  read_media_file: [path]
+  read_multiple_files: [paths]
+  list_directory: [path]
+  list_directory_with_sizes: [path]
+  list_files: [directory]
+  directory_tree: [path]
+  search_files: [path]
+  get_file_info: [path]
+  create_directory: [path]
+  write_file: [path]
+  patch_file: [path]
+  edit_file: [path]
+  move_file: [source, destination]
+
+
+# ============================================================
+# AGENT PATH ALLOWLIST (Gap 3 — M1)
+# Cada agente solo puede operar dentro de sus paths permitidos.
+# Fail-safe: si un agente no esta listado, Nivel B para write_scoped.
+# ============================================================
+agent_path_allowlist:
+  API:
+    - "${VCORE_ROOT}"
+  ENKI:
+    - "${VCORE_ROOT}\\workspace"
+    - "${VCORE_ROOT}\\agents"
+    - "${VCORE_ROOT}\\Frontend"
+    - "${VCORE_ROOT}\\scripts"
+    - "${VCORE_ROOT}\\api"
+    - "${VCORE_ROOT}\\system"
+  NISABA:
+    - "${VCORE_ROOT}"
+    - "${VCORE_ROOT}\\knowledge"
+  SHAMASH:
+    - "${VCORE_ROOT}"
+  ENLIL:
+    - "${VCORE_ROOT}"

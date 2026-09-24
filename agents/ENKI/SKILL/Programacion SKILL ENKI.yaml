@@ -1,0 +1,71 @@
+---
+name: programming
+description: Ejecuta el pipeline Plan→Apply→Verify sobre código Python, C++/JUCE y SQL. Úsalo cuando ENKI necesite generar o modificar código.
+---
+
+# Programación — Plan → Apply → Verify
+
+## Dominio de aplicación
+- Python 3.11 (FastAPI, scripts, agentes)
+- C++/JUCE (audio, UI nativa)
+- SQL (SQLite, migraciones)
+
+## Pipeline de ejecución
+
+### 1. PLAN — `plan_diff()`
+Genera un `DiffProposal` (Pydantic) con:
+- `search_block`: fragmento exacto a reemplazar
+- `replace_block`: contenido nuevo
+- `explanation`: justificación del cambio
+- `estimated_risk`: low | medium | high
+
+**Reglas:**
+- Nunca generar texto libre — siempre `DiffProposal`
+- El `search_block` debe existir en el archivo (exact match o fuzzy)
+- Contexto mínimo: fragmento de SHAMASH con líneas circundantes
+
+### 2. APPLY — `apply_diff()`
+Materializa el diff sobre el archivo real.
+
+**Cascada de matching:**
+1. **Exact match** → reemplazo directo
+2. **Fuzzy whitespace** → normalizar tabs/espacios, threshold 0.92
+3. **DiffMatchError** → falla limpia, el Task Graph regenera "plan"
+
+**Reglas:**
+- Nunca aplicar parcialmente — o todo o nada
+- Registrar `provider_used`, `schema_gate_ok`, `retry_count`
+
+### 3. VERIFY — `shadow_verify()`
+Sin LLM. Ejecuta en `workspace/`:
+- Linter (pylint, clang-format)
+- Syntax check (compilación, import check)
+- Tests (pytest si existen, unittest)
+
+**Timeout duro:** 10s
+
+**Reglas:**
+- Si no existen tests, generar tests mínimos antes de VERIFY
+- Si falla → volver a PLAN con el reporte de error como input
+- Máximo N reintentos (configurable en `agents.yaml`)
+
+## Estrategias por dominio
+
+### Python
+- Preferir `str.replace()` sobre regex
+- Usar `black` para formato después de apply
+- Tests mínimos: funciones básicas
+
+### C++/JUCE
+- Respetar estilo de código existente (clang-format)
+- Tests unitarios con JUCE UnitTest
+- Verificar compilación en debug y release
+
+### SQL
+- Respetar migraciones existentes en `scripts/init_db.py`
+- Usar `BEGIN TRANSACTION` para cambios atómicos
+- Verificar integridad referencial después de apply
+
+## Referencias
+- `VCORE_ARCHITECTURE_v0_4.md` — reglas de DiffProposal
+- `agents/ENKI/ENKI.md` — definición del agente

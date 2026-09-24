@@ -1,0 +1,47 @@
+---
+name: context
+description: Inyecta contexto de proyecto, arquitectura y memoria de trabajo. Hook obligatorio antes de cualquier nodo que no sea "context".
+---
+
+# Contexto — Inyección de Memoria de Trabajo
+
+## Flujo de inyección
+
+### 1. Proyecto — `inject_project_context()`
+Lee:
+- `VCORE_STATE.json` (estado actual)
+- Árbol de archivos del proyecto activo
+- Arquitectura (desde `VCORE_ARCHITECTURE_v0_4.md`)
+
+**Token budgeting por prioridad:**
+1. Arquitectura activa (máxima prioridad)
+2. Lecciones recientes
+3. Historial reciente
+4. Lecciones antiguas (descartar si overflow)
+
+### 2. Resumen — `summarize_file()`
+Resumen de archivo con fragmentos de contexto de línea para ENKI.
+
+- No enviar el archivo completo nunca
+- Extraer fragmento relevante ±20 líneas del search_block
+- Relativizar paths para el usuario
+
+### 3. Memoria — `record_lesson()` y `record_quality()`
+- `record_lesson(lesson)` → guarda en `agent_memory` tipo "lesson"
+- `record_quality(task_id, score, feedback)` → Fase 1 del Evaluation Loop
+
+## Reglas absolutas
+- SHAMASH es **solo lectura** — sin tools de ejecución
+- Nunca ejecuta código ni modifica archivos
+- Hook obligatorio — ningún nodo ejecuta sin SHAMASH primero
+- Siempre el primer nodo del Task Graph
+
+## Sanitización para API
+- `prepare_cloud_context()` → prepara contexto para modelo de frontera
+- Strip de paths absolutos, relativizar, comprimir ≤2K tokens
+- Validar con `gate.py` antes de enviar
+
+## Referencias
+- `VCORE_STATE.json` — estado congelado
+- `VCORE_ARCHITECTURE_v0_4.md` — arquitectura activa
+- `gate_rules.yaml` — para validación de contexto sanitizado

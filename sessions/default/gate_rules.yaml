@@ -1,0 +1,85 @@
+# gate_rules.yaml
+# Reglas del Gate de Ejecucion V-CORE
+#
+# Cada tool se clasifica en una categoria. El Gate decide el nivel
+# final combinando categoria + (si aplica) si el path objetivo
+# esta dentro de workspace_dir.
+#
+# Categorias:
+#   read_only    -> siempre Nivel A
+#   write_scoped -> Nivel A si el path esta dentro de workspace_dir,
+#                    Nivel B si esta fuera
+#   always_b     -> siempre Nivel B, sin excepcion (ej: shell arbitrario)
+
+# ${VCORE_ROOT}/${VCORE_DATA} se resuelven en runtime (gate.py).
+workspace_dir: "${VCORE_ROOT}\\workspace"
+
+# Directorios raiz permitidos (deben coincidir con mcp_config.json)
+allowed_roots:
+  - "${VCORE_ROOT}"
+  - "${VCORE_DATA}"
+
+tools:
+  # --- Lectura: siempre Nivel A ---
+  route: read_only
+  read_file: read_only
+  read_text_file: read_only
+  read_media_file: read_only
+  read_multiple_files: read_only
+  list_directory: read_only
+  list_directory_with_sizes: read_only
+  directory_tree: read_only
+  search_files: read_only
+  get_file_info: read_only
+  list_allowed_directories: read_only
+
+  # --- Escritura: depende del path ---
+  create_directory: write_scoped
+  write_file: write_scoped
+  edit_file: write_scoped
+  move_file: write_scoped
+
+  # --- Shell / instalacion: siempre Nivel B ---
+  execute_shell: always_b
+  install_package: always_b
+
+# Parametros donde puede venir el path objetivo, segun la tool.
+# move_file usa dos (origen y destino) -- se evaluan ambos.
+path_params:
+  read_file: [path]
+  read_text_file: [path]
+  read_media_file: [path]
+  read_multiple_files: [paths]
+  list_directory: [path]
+  list_directory_with_sizes: [path]
+  directory_tree: [path]
+  search_files: [path]
+  get_file_info: [path]
+  create_directory: [path]
+  write_file: [path]
+  edit_file: [path]
+  move_file: [source, destination]
+
+
+# ============================================================
+# AGENT PATH ALLOWLIST (Gap 3 — M1)
+# Cada agente solo puede operar dentro de sus paths permitidos.
+# Fail-safe: si un agente no esta listado, Nivel B para write_scoped.
+# ============================================================
+agent_path_allowlist:
+  API:
+    - "${VCORE_ROOT}"
+  ENKI:
+    - "${VCORE_ROOT}\\workspace"
+    - "${VCORE_ROOT}\\agents"
+    - "${VCORE_ROOT}\\Frontend"
+    - "${VCORE_ROOT}\\scripts"
+    - "${VCORE_ROOT}\\api"
+    - "${VCORE_ROOT}\\system"
+  NISABA:
+    - "${VCORE_ROOT}"
+    - "${VCORE_ROOT}\\knowledge"
+  SHAMASH:
+    - "${VCORE_ROOT}"
+  ENLIL:
+    - "${VCORE_ROOT}"

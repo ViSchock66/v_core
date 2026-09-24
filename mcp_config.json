@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/mcp-config.schema.json",
+  "mcpServers": {
+    "vcore-fs": {
+      "type": "local",
+      "description": "Filesystem tools: read_file, write_file, patch_file, list_files, search_code"
+    },
+    "vcore-shell": {
+      "type": "local",
+      "description": "Shell tools: execute_command, background_task"
+    },
+    "vcore-audit": {
+      "type": "local",
+      "description": "Audit tools: visual_audit, web_search"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "type": "stdio",
+      "description": "MCP filesystem server — acceso estándar MCP a archivos del proyecto. Deshabilitado por defecto: los servers locales vcore-fs/vcore-shell/vcore-audit ya cubren el filesystem. Si se habilita, ajustar 'args' a las rutas reales de tu máquina en vez de las de otro checkout.",
+      "enabled": false
+    }
+  }
+}

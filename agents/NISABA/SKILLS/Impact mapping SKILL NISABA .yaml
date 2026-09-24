@@ -1,0 +1,44 @@
+---
+name: impact-map
+description: Construye un grafo de dependencias efímero para responder "si cambio X, ¿qué se rompe?". Se adjunta al contexto de SHAMASH antes de PLAN.
+---
+
+# Impact Mapping Efímero
+
+## Flujo de construcción
+
+### 1. Detección de dependencias — `get_dependency_graph()`
+- Archivo de entrada → buscar imports, includes, referencias
+- Recursivo: hasta N niveles (configurable, default 2)
+- Evitar ciclos (usar conjunto de visitados)
+
+### 2. Análisis — `get_impact_map()`
+- "Si cambio X, ¿qué archivos se ven afectados?"
+- Resultado: lista de archivos + archivos que dependen de ellos
+- Adjuntar al contexto que SHAMASH entrega a ENKI
+
+### 3. Heurísticas de dependencia
+
+**Python:**
+- Imports: `import X`, `from X import Y`
+- Referencias de clase: `class X` → `X()`, `X.method()`
+
+**C++/JUCE:**
+- `#include "X.h"`
+- Forward declarations
+
+**SQL:**
+- Referencias entre tablas (foreign keys)
+- Views que dependen de tablas
+
+### 4. Estrategias de fallback
+- Si no se pueden detectar dependencias → usar análisis estático de archivos
+- Si el repositorio es muy grande (>10,000 archivos) → limitar profundidad a 1
+- Si el análisis excede 5s → retornar lista vacía (timeout)
+
+## Reglas absolutas
+- Impact Map es **efímero** — no se persiste en el tiempo
+- Se genera por tarea, se adjunta al contexto de SHAMASH
+- No debe exceder 500 tokens en el contexto
+
+## Ejemplo de output

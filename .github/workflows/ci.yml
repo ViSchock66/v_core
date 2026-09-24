@@ -1,0 +1,92 @@
+name: CI
+
+# Verificación mínima pero real: que el backend importe, que el frontend no
+# tenga errores de sintaxis, y que el contrato entre frontend y backend se
+# mantenga. No hay suite de tests unitarios todavía (ver VCORE_ROADMAP.md),
+# así que estos checks cubren las regresiones que ya ocurrieron de verdad:
+# imports rotos por refactor y endpoints que el frontend llama y no existen.
+#
+# Nota: V-CORE usa sintaxis que compila desde Python 3.11 (verificado), por
+# eso la matriz arranca ahí. El venv de desarrollo corre sobre 3.14.
+
+on:
+  push:
+    branches: [main, v0.3-dev]
+  pull_request:
+    branches: [main, v0.3-dev]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        # ChromaDB arrastra onnxruntime y es pesado; para CI alcanza con el
+        # núcleo, porque el código degrada sin él (api/embed.py tiene
+        # fallback de 3 niveles y SHAMASH cae a SQLite).
+        run: |
+          python -m pip install --upgrade pip
+          grep -v '^chromadb' requirements.txt | grep -v '^#' > /tmp/req-ci.txt || true
+          pip install -r /tmp/req-ci.txt
+
+      - name: Compilar todos los módulos
+        run: python -m compileall -q api agents system scripts
+
+      - name: Verificar que el backend importe
+        env:
+          NVIDIA_KEY_MAIN: dummy-key-for-import-only
+          VCORE_DB_PATH: /tmp/vcore-ci.db
+        run: |
+          python -c "
+          import api.main as m
+          assert m.app is not None, 'la app FastAPI no se construyó'
+          print('OK: api.main importa y expone app')
+          "
+
+      - name: Smoke test de endpoints
+        env:
+          NVIDIA_KEY_MAIN: dummy-key-for-import-only
+          VCORE_DB_PATH: /tmp/vcore-ci.db
+          PYTHONWARNINGS: ignore::DeprecationWarning
+        run: |
+          python -c "
+          from fastapi.testclient import TestClient
+          import api.main as m
+          c = TestClient(m.app)
+          for path in ['/health', '/system/model', '/llm/providers', '/sessions', '/approvals']:
+              r = c.get(path)
+              assert r.status_code == 200, f'{path} -> {r.status_code}'
+              print(f'  {path} -> 200')
+          print('OK: endpoints base responden')
+          "
+
+  frontend:
+    name: Frontend (web/ — typecheck)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias de web/
+        run: npm ci --prefix web
+
+      - name: Typecheck del frontend (Vite + TypeScript)
+        run: npm run typecheck --prefix web

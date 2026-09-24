@@ -1,0 +1,51 @@
+# V-CORE — dependencias de runtime
+#
+# Versiones verificadas contra el .venv que corre V-CORE v1.5.0
+# (Python 3.14.6). Los rangos son permisivos hacia adelante: V-CORE usa
+# solo APIs estables de FastAPI/pydantic/httpx.
+#
+# Instalacion:
+#     python -m venv .venv
+#     .venv/Scripts/activate        # Windows
+#     source .venv/bin/activate     # Linux/macOS
+#     pip install -r requirements.txt
+
+# --- Núcleo: sin esto el backend no arranca -------------------------------
+fastapi>=0.118,<1.0
+uvicorn>=0.30,<1.0
+httpx>=0.28,<1.0
+httpx-sse>=0.4
+pydantic>=2.9,<3.0
+pydantic-settings>=2.5
+python-dotenv>=1.0
+PyYAML>=6.0
+aiofiles>=24.0
+requests>=2.32
+websockets>=13.0
+sse-starlette>=2.1
+
+# --- Persistencia y recuperación semántica --------------------------------
+# ChromaDB es TECNICAMENTE opcional: api/embed.py tiene fallback de 3 niveles
+# (Ollama -> NIM -> hash SHA-256) y SHAMASH degrada a SQLite si falta. Pero
+# sin él se pierde la búsqueda semántica, así que va como dependencia real.
+chromadb>=1.0,<2.0
+
+# --- Cliente de vision / NIM ----------------------------------------------
+openai>=1.50
+
+# --- CLI ------------------------------------------------------------------
+prompt_toolkit>=3.0
+
+# --- Opcionales ------------------------------------------------------------
+# No se importan en el camino crítico: el código los envuelve en try/except y
+# degrada sin ellos. Descomentar solo si se usan esas funciones.
+#
+# playwright>=1.45        # auditoría visual (system/visual_auditor.py). Además
+#                         # requiere: playwright install chromium
+# langfuse>=2.0           # trazas remotas. Sin esto el tracer loguea solo local
+#                         # a traces.jsonl y /observability/status lo reporta
+#                         # como inactivo. Es el estado actual del proyecto.
+# anthropic>=0.40         # provider Anthropic/Claude en llm_client.py
+# Pillow>=10.0            # manipulación de imágenes para auditoría visual
+# mcp>=1.0                # cliente MCP externo (system/mcp_manager.py)
+# google-generativeai     # provider Gemini en llm_client.py

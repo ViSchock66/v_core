@@ -1,0 +1,415 @@
+roles:
+  enlil_lead:
+    provider: nvidia
+    model: z-ai/glm-5.3
+    max_tokens: 32768
+    temperature: 0.3
+  enlil_council:
+    provider: nvidia-kimi
+    model: moonshotai/kimi-k3
+    max_tokens: 32768
+    temperature: 0.7
+  enlil_escalation:
+    provider: nvidia-nemotron
+    model: nvidia/nemotron-3-ultra-550b-a55b
+    max_tokens: 32768
+    temperature: 0.5
+  enki_plan:
+    provider: nvidia-nemotron
+    model: nvidia/nemotron-3-super-120b-a12b
+    max_tokens: 32768
+    temperature: 0.3
+  enki_apply:
+    provider: nvidia-nemotron
+    model: nvidia/nemotron-3.5-lightning-30b-a3b
+    max_tokens: 16384
+    temperature: 0.1
+  enki_escalation:
+    provider: nvidia-kimi
+    model: moonshotai/kimi-k3
+    max_tokens: 32768
+    temperature: 0.3
+  nisaba:
+    provider: ollama
+    model: nomic-embed-text
+    max_tokens: 512
+    temperature: 0.0
+  visual_audit:
+    provider: nvidia
+    model: meta/llama-3.2-90b-vision-instruct
+    max_tokens: 1024
+    temperature: 0.2
+model_presets:
+  z-ai/glm-5.3:
+    context_window: 204800
+    max_output: 131072
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.5
+    max_tool_calls: 3
+    max_tokens: 32768
+    safe_max_tokens: 65536
+    timeout: 120
+    reasoning: true
+    notes: 'Lead actual. Reasoning model: emite reasoning_content y deja content en
+      null mientras razona. Tool calling nativo verificado. El razonamiento consume
+      presupuesto de tokens, por eso max_tokens es 32768 y no 8192.
+
+      '
+  moonshotai/kimi-k3:
+    context_window: 262144
+    max_output: 131072
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.6
+    max_tool_calls: 3
+    max_tokens: 32768
+    safe_max_tokens: 65536
+    timeout: 120
+    reasoning: true
+    notes: 'Council y escalation de ENKI. Reasoning model, tool calling nativo verificado.
+      Diversidad de familia respecto al lead (Kimi vs GLM): el consejo no debe ser
+      un eco del mismo modelo.
+
+      '
+  nvidia/nemotron-3-ultra-550b-a55b:
+    context_window: 1048576
+    max_output: 1048576
+    params_total: 550B
+    params_active: 55B
+    architecture: hybrid Mamba-2/attention MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.4
+    max_tool_calls: 3
+    max_tokens: 32768
+    safe_max_tokens: 65536
+    timeout: 180
+    reasoning: true
+    notes: 'Escalation. Verificado vivo con tool calling nativo. Reasoning model:
+      emite reasoning_content, necesita max_tokens alto. 1M de contexto.
+
+      NEM-ULTRA MANAS (historico): 1. Muy lento (5-25s por call). Timeout 180s. 2.
+      Excelente calidad para razonamiento pesado. 3. No soporta imagen/video. 4. No
+      usar como lead por defecto, reserva para escalacion.
+
+      '
+  nvidia/nemotron-3-super-120b-a12b:
+    context_window: 262144
+    max_output: 32768
+    architecture: MoE
+    params_total: 120B
+    params_active: 12B
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.3
+    max_tool_calls: 3
+    max_tokens: 32768
+    safe_max_tokens: 65536
+    timeout: 120
+    reasoning: true
+    notes: 'ENKI plan. Reasoning model, tool calling nativo verificado.
+
+      '
+  nvidia/nemotron-3.5-lightning-30b-a3b:
+    context_window: 262144
+    max_output: 32768
+    architecture: MoE
+    params_total: 30B
+    params_active: 3B
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.1
+    max_tool_calls: 2
+    max_tokens: 16384
+    safe_max_tokens: 32768
+    timeout: 60
+    reasoning: true
+    notes: 'ENKI apply. El mas liviano y rapido de los verificados: aplica diffs pequenos
+      sin gastar un modelo grande.
+
+      '
+  nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:
+    context_window: 131072
+    max_output: 16384
+    architecture: MoE
+    params_total: 30B
+    params_active: 3B
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.2
+    max_tool_calls: 2
+    max_tokens: 16384
+    timeout: 90
+    reasoning: true
+    notes: 'Reserva. Omnimodal con razonamiento, tool calling verificado.
+
+      '
+  z-ai/glm-5.2:
+    retired: true
+    retired_at: '2026-08-21'
+    context_window: 204800
+    max_output: 131072
+    params_total: 744B
+    params_active: 40B
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.5
+    max_tool_calls: 3
+    max_tokens: 8192
+    safe_max_tokens: 32768
+    timeout: 30
+    notes: 'RETIRADO (410 Gone desde 2026-08-21). No usar.
+
+      GLM 5.2 MANAS (historico): 1. El mas rapido (1s), native TC perfecto. 2. Con
+      prompts complejos o muchas tools genera tool calls malformados. 3. Con system
+      prompt largo se confunde (keep system <2000 chars). 4. Code-biased.
+
+      '
+  moonshotai/kimi-k2.6:
+    retired: true
+    retired_at: '2026-09-23'
+    context_window: 262144
+    max_output: 98304
+    params_total: 1T
+    params_active: 32B
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: required
+    temperature: 0.3
+    max_tool_calls: 1
+    max_tokens: 4096
+    safe_max_tokens: 8192
+    timeout: 30
+    notes: 'RETIRADO: responde 404 para esta cuenta. No usar.
+
+      KIMI MANAS (historico): con tool_choice=auto ignora las tools y alucina; con
+      required hace tool calls correctos. Sin limite de max_tool_calls spamea >30
+      calls y NIM devuelve 429.
+
+      '
+  z-ai/glm-5.1:
+    retired: true
+    retired_at: '2026-09-23'
+    context_window: 204800
+    max_output: 131072
+    params_total: 744B
+    params_active: 40B
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.5
+    max_tool_calls: 3
+    max_tokens: 8192
+    safe_max_tokens: 32768
+    timeout: 30
+    notes: 'RETIRADO. Misma familia que GLM 5.2 (verificado 410).
+
+      '
+  deepseek-ai/deepseek-v4-flash:
+    retired: true
+    retired_at: '2026-09-23'
+    context_window: 1048576
+    max_output: 16384
+    params_total: 1.6T
+    params_active: 284B
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.5
+    max_tool_calls: 3
+    max_tokens: 8192
+    safe_max_tokens: 16384
+    timeout: 60
+    notes: 'RETIRADO (410 Gone). No usar. Latencia variable (6-50s, cold start).
+
+      '
+  deepseek-ai/deepseek-v4-pro:
+    retired: true
+    retired_at: '2026-09-23'
+    context_window: 1048576
+    max_output: 16384
+    params_total: 1.6T
+    params_active: 49B
+    architecture: MoE
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.5
+    max_tool_calls: 3
+    max_tokens: 8192
+    safe_max_tokens: 16384
+    timeout: 90
+    notes: 'RETIRADO (410 Gone). No usar. Lento (3-11s por call).
+
+      '
+  nvidia/llama-3.3-nemotron-super-49b-v1:
+    retired: true
+    retired_at: '2026-09-23'
+    context_window: 131072
+    max_output: 16384
+    params_total: 49B
+    params_active: 49B
+    architecture: dense
+    tool_strategy: native_tc
+    tool_choice: auto
+    temperature: 0.5
+    max_tool_calls: 3
+    max_tokens: 4096
+    safe_max_tokens: 8192
+    timeout: 60
+    notes: 'RETIRADO (410 Gone). Reemplazado por nvidia/nemotron-3-super-120b-a12b.
+
+      '
+  nvidia/nemotron-mini-4b-instruct:
+    retired: true
+    retired_at: '2026-09-23'
+    context_window: 4096
+    max_output: 2048
+    params_total: 4B
+    params_active: 4B
+    architecture: dense
+    tool_strategy: text_tool
+    tool_choice: auto
+    temperature: 0.1
+    max_tool_calls: 3
+    max_tokens: 2048
+    safe_max_tokens: 4096
+    timeout: 30
+    notes: 'RETIRADO (410 Gone). Reemplazado por nvidia/nemotron-3.5-lightning-30b-a3b.
+      Sin tools nativas.
+
+      '
+  meta/llama-3.2-90b-vision-instruct:
+    context_window: 16384
+    max_output: 1024
+    architecture: LLM+Vision
+    tool_strategy: text_tool
+    tool_choice: none
+    temperature: 0.2
+    max_tool_calls: 0
+    max_tokens: 800
+    timeout: 120
+    unverified: true
+    notes: 'NIM vision model para visual_audit. Solo texto+imagen, no tools. NO VERIFICADO
+      tras la purga de modelos del 2026-09: puede estar retirado. Verificar con scripts/probe_models.py
+      antes de usar visual_audit.
+
+      '
+  nomic-embed-text:
+    context_window: 8192
+    max_output: 512
+    params_total: 137M
+    params_active: 137M
+    architecture: bert
+    tool_strategy: text_tool
+    tool_choice: none
+    temperature: 0.0
+    max_tool_calls: 0
+    max_tokens: 512
+    safe_max_tokens: 512
+    timeout: 10
+    notes: 'Nomic Embed: embeddings para NISABA. Sin tools, temp 0. Se sirve via Ollama
+      local; si Ollama no responde, api/embed.py cae al tier NIM (nvidia/nemotron-3-embed-1b,
+      2048 dims).
+
+      '
+auto_context:
+  enabled: true
+  max_context_ratio: 0.8
+  trim_strategy: oldest_first
+  min_messages_kept: 4
+  warn_threshold: 0.6
+available_models:
+- id: z-ai/glm-5.3
+  name: GLM 5.3
+  context: 200K
+  priority: 1
+  reasoning: true
+- id: moonshotai/kimi-k3
+  name: Kimi K3
+  context: 256K
+  priority: 2
+  reasoning: true
+- id: nvidia/nemotron-3-ultra-550b-a55b
+  name: Nemotron 3 Ultra 550B
+  context: 1M
+  priority: 3
+  reasoning: true
+- id: nvidia/nemotron-3-super-120b-a12b
+  name: Nemotron 3 Super 120B
+  context: 256K
+  priority: 4
+  reasoning: true
+- id: nvidia/nemotron-3.5-lightning-30b-a3b
+  name: Nemotron 3.5 Lightning 30B
+  context: 256K
+  priority: 5
+  reasoning: true
+- id: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
+  name: Nemotron 3 Nano Omni 30B
+  context: 128K
+  priority: 6
+  reasoning: true
+fallback_chains:
+  nvidia:
+  - nvidia-lead
+  - nvidia-kimi
+  - nvidia-nemotron
+  - nvidia-mistral-large
+  - nvidia-fallback
+  - nvidia-fallback-2
+  nvidia-lead:
+  - nvidia-kimi
+  - nvidia-nemotron
+  - nvidia-mistral-large
+  - nvidia-fallback
+  - nvidia-fallback-2
+  nvidia-kimi:
+  - nvidia-lead
+  - nvidia-nemotron
+  - nvidia-mistral-large
+  - nvidia-fallback
+  - nvidia-fallback-2
+  nvidia-nemotron:
+  - nvidia-lead
+  - nvidia-kimi
+  - nvidia-mistral-large
+  - nvidia-fallback
+  - nvidia-fallback-2
+  nvidia-mistral-large:
+  - nvidia-lead
+  - nvidia-kimi
+  - nvidia-nemotron
+  - nvidia-fallback
+  - nvidia-fallback-2
+  nvidia-fallback:
+  - nvidia-lead
+  - nvidia-kimi
+  - nvidia-nemotron
+  - nvidia-mistral-large
+  - nvidia-fallback-2
+  nvidia-fallback-2:
+  - nvidia-lead
+  - nvidia-kimi
+  - nvidia-nemotron
+  - nvidia-mistral-large
+  - nvidia-fallback
+  ollama: []
+circuit_breaker:
+  error_threshold: 0.3
+  min_calls_threshold: 5
+  window_seconds: 60
+  recovery_timeout: 120
+  transient_codes:
+  - 429
+  persistent_codes:
+  - 500
+  - 502
+  - 503
+  - 504
+  fatal_codes:
+  - 401
+  - 403

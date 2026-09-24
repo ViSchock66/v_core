@@ -1,0 +1,328 @@
+@import 'tailwindcss';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   V-CORE — Sistema de diseño
+   Hereda los tokens del frontend anterior (que estaban bien resueltos: 2 temas
+   × 6 acentos con contraste verificado) y los expone a Tailwind v4 vía @theme.
+
+   Regla de la casa: NINGUNA dependencia externa en runtime. El frontend
+   anterior cargaba Inter, JetBrains Mono, highlight.js y Monaco desde CDNs
+   (cdnjs, jsdelivr, fonts.googleapis). En una app local eso significa que sin
+   internet la UI se degrada en silencio: el visor de artefactos no renderiza y
+   el resaltado desaparece. Acá las fuentes son del sistema y el resaltado lo
+   hace el bundle.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+[data-theme='dark'] {
+  --gray-0: #0a0a0b;
+  --gray-1: #131314;
+  --gray-2: #1a1a1c;
+  --gray-3: #232325;
+  --gray-4: #2c2c2e;
+  --gray-5: #3a3a3c;
+  --gray-6: #525254;
+  --gray-7: #86868b;
+  --gray-8: #b0b0b2;
+  --gray-9: #e0e0e2;
+  --gray-10: #f2f2f4;
+
+  --surf-sidebar: var(--gray-2);
+  --surf-chat: var(--gray-0);
+  --surf-panel: var(--gray-1);
+  --surf-card: var(--gray-3);
+  --surf-input: var(--gray-3);
+  --surf-hover: rgba(255, 255, 255, 0.05);
+  --surf-active: rgba(255, 255, 255, 0.08);
+  --surf-code: var(--gray-0);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --text-primary: var(--gray-9);
+  --text-secondary: var(--gray-7);
+  --text-tertiary: var(--gray-6);
+
+  --success: #2dd4a0;
+  --warning: #f0a832;
+  --danger: #f05050;
+  --purple: #a78bfa;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  --accent: #00d4ff;
+  --accent-dim: rgba(0, 212, 255, 0.08);
+  --accent-glow: rgba(0, 212, 255, 0.15);
+  --accent-solid: rgba(0, 212, 255, 0.2);
+  /* Color legible SOBRE --accent relleno. Dark usa acentos neón (piden
+     foreground oscuro); light usa tonos profundos (piden claro). */
+  --accent-fg: #000;
+  --msg-user-bg: rgba(0, 212, 255, 0.06);
+  --msg-user-border: rgba(0, 212, 255, 0.12);
+}
+
+[data-theme='light'] {
+  --gray-0: #f8f7f5;
+  --gray-1: #f2f1ed;
+  --gray-2: #ebeae5;
+  --gray-3: #e2e1db;
+  --gray-4: #d6d4ce;
+  --gray-5: #c2bfb8;
+  --gray-6: #9a988f;
+  --gray-7: #6b6962;
+  --gray-8: #43423d;
+  --gray-9: #292824;
+  --gray-10: #191815;
+
+  --surf-sidebar: var(--gray-2);
+  --surf-chat: var(--gray-0);
+  --surf-panel: var(--gray-1);
+  --surf-card: var(--gray-1);
+  --surf-input: var(--gray-0);
+  --surf-hover: rgba(0, 0, 0, 0.03);
+  --surf-active: rgba(0, 0, 0, 0.06);
+  --surf-code: var(--gray-2);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-default: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.11);
+  --text-primary: var(--gray-9);
+  --text-secondary: var(--gray-7);
+  --text-tertiary: var(--gray-6);
+
+  --success: #0d9488;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --purple: #7c3aed;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  --accent: #007a99;
+  --accent-dim: rgba(0, 122, 153, 0.06);
+  --accent-glow: rgba(0, 122, 153, 0.1);
+  --accent-solid: rgba(0, 122, 153, 0.15);
+  --accent-fg: #fff;
+  --msg-user-bg: rgba(0, 122, 153, 0.05);
+  --msg-user-border: rgba(0, 122, 153, 0.15);
+}
+
+/* Acentos (dark) */
+[data-accent='cyan'] {
+  --accent: #00d4ff;
+  --accent-dim: rgba(0, 212, 255, 0.08);
+  --accent-glow: rgba(0, 212, 255, 0.15);
+  --accent-solid: rgba(0, 212, 255, 0.2);
+}
+[data-accent='emerald'] {
+  --accent: #10a37f;
+  --accent-dim: rgba(16, 163, 127, 0.08);
+  --accent-glow: rgba(16, 163, 127, 0.15);
+  --accent-solid: rgba(16, 163, 127, 0.2);
+}
+[data-accent='amber'] {
+  --accent: #f0a832;
+  --accent-dim: rgba(240, 168, 50, 0.08);
+  --accent-glow: rgba(240, 168, 50, 0.15);
+  --accent-solid: rgba(240, 168, 50, 0.2);
+}
+[data-accent='rose'] {
+  --accent: #fb7185;
+  --accent-dim: rgba(251, 113, 133, 0.08);
+  --accent-glow: rgba(251, 113, 133, 0.15);
+  --accent-solid: rgba(251, 113, 133, 0.2);
+}
+[data-accent='violet'] {
+  --accent: #a78bfa;
+  --accent-dim: rgba(167, 139, 250, 0.08);
+  --accent-glow: rgba(167, 139, 250, 0.15);
+  --accent-solid: rgba(167, 139, 250, 0.2);
+}
+[data-accent='slate'] {
+  --accent: #94a3b8;
+  --accent-dim: rgba(148, 163, 184, 0.08);
+  --accent-glow: rgba(148, 163, 184, 0.15);
+  --accent-solid: rgba(148, 163, 184, 0.2);
+}
+
+/* Acentos (light): tonos profundos para que el contraste funcione en fondo claro */
+[data-theme='light'][data-accent='cyan'] {
+  --accent: #007a99;
+  --accent-dim: rgba(0, 122, 153, 0.06);
+  --accent-glow: rgba(0, 122, 153, 0.1);
+  --accent-solid: rgba(0, 122, 153, 0.15);
+}
+[data-theme='light'][data-accent='emerald'] {
+  --accent: #0d9488;
+  --accent-dim: rgba(13, 148, 136, 0.06);
+  --accent-glow: rgba(13, 148, 136, 0.1);
+  --accent-solid: rgba(13, 148, 136, 0.15);
+}
+[data-theme='light'][data-accent='amber'] {
+  --accent: #b45309;
+  --accent-dim: rgba(180, 83, 9, 0.06);
+  --accent-glow: rgba(180, 83, 9, 0.1);
+  --accent-solid: rgba(180, 83, 9, 0.15);
+}
+[data-theme='light'][data-accent='rose'] {
+  --accent: #dc2626;
+  --accent-dim: rgba(220, 38, 38, 0.06);
+  --accent-glow: rgba(220, 38, 38, 0.1);
+  --accent-solid: rgba(220, 38, 38, 0.15);
+}
+[data-theme='light'][data-accent='violet'] {
+  --accent: #7c3aed;
+  --accent-dim: rgba(124, 58, 237, 0.06);
+  --accent-glow: rgba(124, 58, 237, 0.1);
+  --accent-solid: rgba(124, 58, 237, 0.15);
+}
+[data-theme='light'][data-accent='slate'] {
+  --accent: #475569;
+  --accent-dim: rgba(71, 85, 105, 0.06);
+  --accent-glow: rgba(71, 85, 105, 0.1);
+  --accent-solid: rgba(71, 85, 105, 0.15);
+}
+
+/* Exponer los tokens a las utilidades de Tailwind v4 */
+@theme inline {
+  --color-surf-sidebar: var(--surf-sidebar);
+  --color-surf-chat: var(--surf-chat);
+  --color-surf-panel: var(--surf-panel);
+  --color-surf-card: var(--surf-card);
+  --color-surf-input: var(--surf-input);
+  --color-surf-hover: var(--surf-hover);
+  --color-surf-active: var(--surf-active);
+  --color-surf-code: var(--surf-code);
+
+  --color-b-subtle: var(--border-subtle);
+  --color-b-default: var(--border-default);
+  --color-b-strong: var(--border-strong);
+
+  --color-t-primary: var(--text-primary);
+  --color-t-secondary: var(--text-secondary);
+  --color-t-tertiary: var(--text-tertiary);
+
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-accent-solid: var(--accent-solid);
+  --color-accent-fg: var(--accent-fg);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-purple: var(--purple);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--surf-chat);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-6);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Animaciones del sistema */
+@keyframes vc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes vc-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes vc-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vc-pulse {
+  animation: vc-pulse 1.4s ease-in-out infinite;
+}
+.vc-caret::after {
+  content: '▍';
+  animation: vc-blink 1s steps(1) infinite;
+  color: var(--accent);
+  margin-left: 1px;
+}
+.vc-enter {
+  animation: vc-slide-up 0.18s ease-out;
+}

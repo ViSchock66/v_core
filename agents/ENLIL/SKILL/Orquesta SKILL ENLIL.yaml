@@ -1,0 +1,62 @@
+---
+name: orchestration
+description: Orquesta el flujo de ejecución multiagente. Clasifica tareas, genera Task Graphs, y valida el grafo antes de ejecución.
+---
+
+# Orquestación — Clasificación → Task Graph → Validación
+
+## Flujo de ejecución
+
+### 1. Clasificación — `classify_task()`
+Determina si la tarea es simple o compleja.
+
+- **Simple** → respuesta directa (sin Task Graph)
+- **Compleja** → genera Task Graph con nodos
+
+**Criterios de complejidad:**
+- > 2 archivos involucrados → compleja
+- > 3 pasos → compleja
+- Refactorización → compleja
+- Búsqueda + consulta + escritura → compleja
+
+### 2. Council Mode — `council_decide()`
+Lanza 2 providers en paralelo para decisiones ambiguas.
+
+- Divergencia persistente → bloqueo para revisión humana
+- Máximo 3 intentos de convergencia
+- Costo controlado — no usar para tareas simples
+
+### 3. Task Graph — `build_task_graph()`
+Genera grafo JSON con:
+- `nodes`: id, agent, action, token_budget, next
+- `task_type`: code_refactoring, search, audit, etc.
+- `ask_approval`: true/false (exactamente uno)
+
+**Reglas de validación:**
+- DAG (sin ciclos)
+- Primer nodo = SHAMASH.context
+- Un solo `ask_approval=true`
+- Cada nodo tiene `token_budget` definido
+- Todos los `id` en `next` existen
+
+### 4. Auditoría — `validate_diffs()`
+Schema gate final: `DiffProposal` debe ser válido antes de exponer al usuario.
+
+**Niveles de aprobación:**
+- Nivel A: ejecución automática (read_only)
+- Nivel B: requiere aprobación humana (write_scoped, always_b)
+
+## Responsabilidades
+- ENLIL es el **único punto de entrada** del usuario
+- ENLIL es el **único agente que delega**
+- Los agentes no se llaman entre sí en cadena
+
+## Tokens
+- Token budget dinámico por nodo (`TaskGraphBuilder`)
+- Ventana efectiva = 0.60 × context_window_announced
+- Usar `budget_context` para cálculo adaptativo
+
+## Referencias
+- `model_routing.yaml` — qué modelo usa cada rol
+- `gate_rules.yaml` — reglas de aprobación
+- `VCORE_ARCHITECTURE_v0_4.md` — Task Graph Engine

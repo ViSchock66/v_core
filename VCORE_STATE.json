@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "session_id": 1,
+  "proyecto_activo": "V-CORE",
+  "proyectos_registrados": [
+    "V-CORE"
+  ],
+  "modelos_en_vram": [],
+  "ultima_accion_real": "",
+  "agentes_disponibles": [
+    "ENLIL",
+    "SHAMASH",
+    "ENKI",
+    "NISABA"
+  ],
+  "agentes_pendientes": [],
+  "mcp_activos": [
+    "vcore-fs",
+    "vcore-shell",
+    "vcore-audit"
+  ],
+  "scripts_operativos": [
+    "init_db.py",
+    "diagnostics.py",
+    "watchdog.py",
+    "test_frontend.py",
+    "audit.py",
+    "capture_frontend.py"
+  ],
+  "enlil_backend": "nvidia",
+  "enlil_lead_model": "z-ai/glm-5.3",
+  "enlil_council_model": "moonshotai/kimi-k3",
+  "enlil_escalation_model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "enki_plan_model": "nvidia/nemotron-3-super-120b-a12b",
+  "enki_apply_model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+  "_shamash_note": "SHAMASH no es un agente con modelo LLM — es capa de persistencia (SQLite + ChromaDB). Su campo 'shamash_model' se elimino en 2.0.0: apuntaba a un modelo retirado y se sincronizaba desde model_routing.yaml sin efecto real.",
+  "v2_resumen": "v2.0.0 — cambio de contrato. Motor de permisos (PDP/PEP/HITL), capa de embeddings reparada, workspace por sesion, catalogo de modelos vivos con soporte de reasoning_content.",
+  "nvidia_nim_base_url": "https://integrate.api.nvidia.com/v1",
+  "tokens_sesion": 0,
+  "m3_status": "COMPLETADO",
+  "m3_nota": "v1.2: 32 bugs cerrados. Frontend 2 temas, burbujas asimetricas, approval inline, search preview, delete tooltip. CLI: 17 comandos con prompt_toolkit.",
+  "ultimo_roadmap": "VCORE_ROADMAP",
+  "ultima_arquitectura": "VCORE_ARCHITECTURE",
+  "fecha_actualizacion": "2026-09-23T23:14:53.007966+00:00",
+  "ultima_sesion": "docs/_archive/SESION_2026-07-08.md"
+}

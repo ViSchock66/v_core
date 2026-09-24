@@ -1,0 +1,34 @@
+---
+name: filesystem
+description: Operaciones de filesystem — árbol de archivos, metadatos, exclusiones. Usa `os.scandir` para eficiencia sin LLM.
+---
+
+# Filesystem — Árbol y Metadatos
+
+## Operaciones
+
+### 1. Árbol — `get_file_tree()`
+- Listado recursivo de directorios
+- Exclusión de patrones (`.venv`, `__pycache__`, `.git`)
+- Máxima profundidad: configurable (default: 5)
+
+### 2. Tamaño — `get_repo_size_kb()`
+- Reemplaza `SHAMASH.estimate_repo_size()` cuando está disponible
+- Usa `os.scandir` (más eficiente que `os.walk`)
+- Cache por 5 minutos para evitar escaneo repetido
+
+### 3. Metadatos — extensiones y tipos
+- `get_file_metadata(filepath)`: tamaño, mtime, tipo MIME
+- Uso en UI: mostrar iconos por extensión (BLOQUE 2)
+
+## Exclusiones estándar
+
+```yaml
+exclude_patterns:
+  - ".venv/**"
+  - "__pycache__/**"
+  - ".git/**"
+  - "*.pyc"
+  - "chroma_db/**"
+  - "workspace/.verify/**"
+  - "*.log"

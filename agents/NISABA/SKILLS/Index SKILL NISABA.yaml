@@ -1,0 +1,49 @@
+---
+name: indexing
+description: Indexa archivos incrementalmente por hash de contenido. Usa ChromaDB local con nomic-embed-text. Nunca reindexa lo que no cambió.
+---
+
+# Indexación Incremental
+
+## Flujo de indexación
+
+### 1. Detección de cambios — `index_file()`
+- Calcular SHA-256 hash del archivo en disco
+- Comparar con `agent_state.file_hashes[filepath]`
+- Si hash coincide → skip
+- Si hash cambia → reindexar
+
+### 2. Embeddings — nomic-embed-text via Ollama
+- Modelo local, $0
+- Chunking: 512 tokens por chunk
+- Overlap: 64 tokens
+
+### 3. Almacenamiento — ChromaDB
+- Persistent: `chroma_db/`
+- Collection por proyecto o tipo de archivo
+- Nunca commit a Git
+
+### 4. Documentación — `rag_documents` tabla
+- `filepath`, `content_hash`, `indexed_at`, `chunk_ids`
+- Traza qué documentos están en ChromaDB
+
+## Estrategias de prioridad
+1. Archivos de código (`.py`, `.cpp`, `.h`, `.js`) → alta
+2. Documentación (`*.md`, `*.rst`) → media
+3. Configuración (`*.yaml`, `*.json`) → baja
+4. `workspace/**` → prioridad crítica
+5. `chroma_db/` → excluido (no indexar el índice)
+
+## Hash strategies
+- `SHA-256` para contenido de archivos
+- `blake2b` para archivos grandes (>10MB) — más rápido
+- Never use `md5` (colisiones)
+
+## Condiciones de fallo
+- Ollama no responde → skip y log
+- ChromaDB corruption → `FAILED_UNCLEAN_SHUTDOWN` en startup
+- Hash mismatch → `RE_SYNC` — no permitir nuevas escrituras
+
+## Referencias
+- `VCORE_ARCHITECTURE_v0_4.md` — NISABA §4
+- `scripts/diagnostics.py` — herramienta CLI de diagnóstico
