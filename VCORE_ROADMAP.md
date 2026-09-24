@@ -42,16 +42,11 @@ este roadmap listaba como P0/P1 y quedaron cerrados:
 
 ## P0 — Correctitud y seguridad operativa
 
-### ROTAR la GEMINI_API_KEY filtrada
+### Revocar la clave de Gemini retirada (acción del maintainer)
 
-**Evidencia:** el commit `f057245` ("v4.2-final") versionó `.env` con la clave
-real. `4ec33ed` la removió del tracking, pero sigue alcanzable en el historial
-desde `main` y `v0.3-dev`, y coincide con la que el sistema usa hoy.
-
-**Objetivo:** rotar la clave en Google AI Studio y actualizar `.credentials.yaml`.
-Opcionalmente reescribir el historial para purgar `f057245`.
-
-**Bloquea:** hacer público el repositorio.
+La clave ya no está en el sistema ni en el árbol publicado. Resta revocarla
+en Google AI Studio: una credencial retirada sigue viva en el proveedor hasta
+que se revoca. Higiene de credenciales, no prerrequisito de publicación.
 
 ### Resiliencia ante fallo de proveedor
 

@@ -11,9 +11,9 @@ name: CI
 
 on:
   push:
-    branches: [main, v0.3-dev]
+    branches: [main]
   pull_request:
-    branches: [main, v0.3-dev]
+    branches: [main]
   workflow_dispatch:
 
 jobs:

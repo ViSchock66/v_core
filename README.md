@@ -250,7 +250,7 @@ python -c "from api.version import bump; bump('1.6.0')"
 
 ### Integración continua
 
-`.github/workflows/ci.yml` corre en cada push y PR a `main` / `v0.3-dev`:
+`.github/workflows/ci.yml` corre en cada push y PR a `main`:
 
 - **Backend** (matriz 3.11–3.13): compila todos los módulos, verifica que
   `api.main` importe y hace smoke test de los endpoints base con `TestClient`.

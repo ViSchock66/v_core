@@ -98,11 +98,11 @@ verificación integrada al cierre.
 - `AGENTS.md`: puerto canónico y comandos actualizados (referenciaba
   `scripts/smoke_test.py`, que no existe).
 
-### Security — pendiente antes de publicar
+### Security — resuelto antes de publicar
 
-- `GEMINI_API_KEY` quedó versionada en el commit `f057245` ("v4.2-final") y
-  sigue alcanzable desde `main` y `v0.3-dev`. La clave coincide con la activa:
-  **debe rotarse** antes de hacer público el repositorio.
+- La clave de Gemini hallada durante la auditoría se retiró del sistema y del
+  árbol publicado; este repositorio nació de un export sin historial previo.
+  Pendiente del maintainer: revocarla en el proveedor.
 
 ## Unreleased — Normalización documental
 
