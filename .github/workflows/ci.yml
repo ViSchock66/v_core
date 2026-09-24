@@ -60,9 +60,12 @@ jobs:
       - name: Smoke test de endpoints
         env:
           NVIDIA_KEY_MAIN: dummy-key-for-import-only
-          VCORE_DB_PATH: /tmp/vcore-ci.db
           PYTHONWARNINGS: ignore::DeprecationWarning
         run: |
+          # /sessions lee la tabla legacy en la raiz del repo: sin schema
+          # inicializado, el ALTER lazy de _ensure_sessions_title_column
+          # revienta con "no such table". init_db.py es idempotente.
+          python scripts/init_db.py
           python -c "
           from fastapi.testclient import TestClient
           import api.main as m
